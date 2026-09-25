@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rompecabezas de Manuelita</title>
+<style>
+  :root {
+    --bg: #fdf6e3;
+    --panel: #ffffff;
+    --ink: #3b3a30;
+    --accent: #3f9e5a;
+    --accent-dark: #2d7543;
+    --muted: #8a8570;
+    --board: #efe6cc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  header { text-align: center; padding: 16px 16px 4px; }
+  h1 { margin: 0; font-size: clamp(1.5rem, 4vw, 2.3rem); color: var(--accent-dark); }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center;
+    padding: 12px 16px;
+  }
+  .controls label { font-weight: bold; }
+  select, button {
+    font: inherit; font-size: 1rem;
+    padding: 8px 14px; border-radius: 999px;
+    border: 2px solid var(--accent); background: var(--panel); color: var(--ink);
+    cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: #fff; }
+  button:hover { filter: brightness(1.05); }
+  .stats { display: flex; gap: 16px; color: var(--muted); font-weight: bold; }
+  .wrap { width: 100%; max-width: 1400px; padding: 0 16px 24px; position: relative; }
+  canvas {
+    width: 100%; height: auto; display: block;
+    background: #e9dfc1; border-radius: 16px;
+    box-shadow: inset 0 0 0 3px #d8cba4;
+    touch-action: none;
+  }
+  .win {
+    position: absolute; inset: 0 16px 36px; display: none;
+    align-items: flex-end; justify-content: center; pointer-events: none;
+  }
+  .win.show { display: flex; }
+  .win div {
+    pointer-events: auto;
+    background: rgba(255,255,255,.95); padding: 24px 32px; border-radius: 20px;
+    text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.2);
+  }
+  .win h2 { margin: 0 0 8px; color: var(--accent-dark); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🐢 Rompecabezas de Manuelita</h1>
+  <p>Arrastrá las piezas y ayudá a la tortuga a llegar a París</p>
+</header>
+
+<div class="controls">
+  <label for="level">Piezas:</label>
+  <select id="level">
+    <option value="3x3">9 (fácil)</option>
+    <option value="4x3" selected>12</option>
+    <option value="5x4">20</option>
+    <option value="6x5">30</option>
+    <option value="8x6">48 (difícil)</option>
+  </select>
+  <button class="primary" id="shuffle">Mezclar</button>
+  <button id="ghost">Ver guía</button>
+  <div class="stats">
+    <span>⏱ <span id="time">0:00</span></span>
+    <span>✋ <span id="moves">0</span></span>
+    <span>🧩 <span id="placed">0</span>/<span id="total">0</span></span>
+  </div>
+</div>
+
+<div class="wrap">
+  <canvas id="c" width="1400" height="900"></canvas>
+  <div class="win" id="win">
+    <div>
+      <h2>¡Manuelita llegó a París! 🎉</h2>
+      <p id="winText"></p>
+      <button class="primary" id="again">Jugar otra vez</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Ilustración (SVG original) ----------
+const BOARD_W = 720, BOARD_H = 540;
+
+const SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${BOARD_W}" height="${BOARD_H}" viewBox="0 0 720 540">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7ec8f0"/>
+      <stop offset="1" stop-color="#fdf1c7"/>
+    </linearGradient>
+    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8bc34a"/>
+      <stop offset="1" stop-color="#4f8a2a"/>
+    </linearGradient>
+    <radialGradient id="skin" cx=".4" cy=".35" r=".7">
+      <stop offset="0" stop-color="#d7ec9a"/>
+      <stop offset="1" stop-color="#9cc75a"/>
+    </radialGradient>
+  </defs>
+
+  <!-- cielo -->
+  <rect width="720" height="540" fill="url(#sky)"/>
+
+  <!-- sol -->
+  <g transform="translate(90 90)">
+    <g stroke="#f7b733" stroke-width="6" stroke-linecap="round">
+      <line x1="0" y1="-62" x2="0" y2="-80"/><line x1="0" y1="62" x2="0" y2="80"/>
+      <line x1="-62" y1="0" x2="-80" y2="0"/><line x1="62" y1="0" x2="80" y2="0"/>
+      <line x1="44" y1="44" x2="57" y2="57"/><line x1="-44" y1="-44" x2="-57" y2="-57"/>
+      <line x1="44" y1="-44" x2="57" y2="-57"/><line x1="-44" y1="44" x2="-57" y2="57"/>
+    </g>
+    <circle r="48" fill="#ffd54f"/>
+    <circle cx="-15" cy="-8" r="5" fill="#6d4c41"/>
+    <circle cx="15" cy="-8" r="5" fill="#6d4c41"/>
+    <path d="M-18 12 Q0 30 18 12" stroke="#6d4c41" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="-26" cy="8" r="7" fill="#ff8a65" opacity=".6"/>
+    <circle cx="26" cy="8" r="7" fill="#ff8a65" opacity=".6"/>
+  </g>
+
+  <!-- nubes -->
+  <g fill="#ffffff">
+    <g transform="translate(250 70)">
+      <circle cx="0" cy="10" r="22"/><circle cx="26" cy="0" r="28"/><circle cx="56" cy="10" r="22"/>
+      <rect x="0" y="10" width="56" height="22"/>
+    </g>
+    <g transform="translate(470 120) scale(.8)">
+      <circle cx="0" cy="10" r="22"/><circle cx="26" cy="0" r="28"/><circle cx="56" cy="10" r="22"/>
+      <rect x="0" y="10" width="56" height="22"/>
+    </g>
+  </g>
+
+  <!-- título -->
+  <text x="360" y="58" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
+        font-style="italic" font-weight="bold" font-size="46" fill="#2d7543"
+        stroke="#ffffff" stroke-width="6" paint-order="stroke">Manuelita</text>
+
+  <!-- torre Eiffel a lo lejos -->
+  <g transform="translate(620 118)" fill="#8d6e63">
+    <path d="M-4 0 L4 0 L6 30 L-6 30 Z"/>
+    <path d="M-7 30 L7 30 L14 95 L-14 95 Z"/>
+    <rect x="-18" y="92" width="36" height="7"/>
+    <path d="M-16 99 L16 99 L40 210 L22 210 Q0 160 -22 210 L-40 210 Z"/>
+    <rect x="-24" y="150" width="48" height="6"/>
+    <rect x="-1.5" y="-14" width="3" height="16"/>
+  </g>
+  <g transform="translate(620 118)">
+    <rect x="-9" y="-26" width="18" height="12" fill="#1e63b5"/>
+  </g>
+
+  <!-- lomas -->
+  <path d="M0 330 Q120 270 250 310 T520 300 T720 290 L720 540 L0 540 Z" fill="#9ccc65"/>
+  <path d="M0 380 Q160 330 330 370 T720 350 L720 540 L0 540 Z" fill="#7cb342"/>
+
+  <!-- camino de Pehuajó a París -->
+  <path d="M60 540 Q140 440 330 440 Q520 440 600 330 L640 330 Q570 470 380 480 Q200 490 170 540 Z"
+        fill="#e8c887" opacity=".95"/>
+
+  <!-- cartel -->
+  <g transform="translate(70 360)">
+    <rect x="-4" y="0" width="8" height="90" fill="#795548"/>
+    <path d="M-50 -2 L40 -2 L56 16 L40 34 L-50 34 Z" fill="#ffecb3" stroke="#795548" stroke-width="3"/>
+    <text x="-2" y="23" text-anchor="middle" font-family="Trebuchet MS, sans-serif" font-size="17"
+          font-weight="bold" fill="#5d4037">Pehuajó</text>
+  </g>
+  <g transform="translate(600 420)">
+    <rect x="-4" y="0" width="8" height="70" fill="#795548"/>
+    <path d="M-40 -2 L40 -2 L56 16 L40 34 L-40 34 Z" fill="#ffecb3" stroke="#795548" stroke-width="3"/>
+    <text x="4" y="23" text-anchor="middle" font-family="Trebuchet MS, sans-serif" font-size="17"
+          font-weight="bold" fill="#5d4037">París →</text>
+  </g>
+
+  <!-- flores -->
+  <g>
+    <g transform="translate(40 500)"><circle r="7" fill="#f06292"/><circle r="3" fill="#fff59d"/></g>
+    <g transform="translate(150 470)"><circle r="6" fill="#ba68c8"/><circle r="2.5" fill="#fff59d"/></g>
+    <g transform="translate(250 515)"><circle r="7" fill="#ffffff"/><circle r="3" fill="#ffb300"/></g>
+    <g transform="translate(470 520)"><circle r="6" fill="#f06292"/><circle r="2.5" fill="#fff59d"/></g>
+    <g transform="translate(680 500)"><circle r="7" fill="#ffffff"/><circle r="3" fill="#ffb300"/></g>
+    <g transform="translate(540 380)"><circle r="5" fill="#ba68c8"/><circle r="2" fill="#fff59d"/></g>
+    <g transform="translate(200 395)"><circle r="5" fill="#f06292"/><circle r="2" fill="#fff59d"/></g>
+  </g>
+
+  <!-- mariposa -->
+  <g transform="translate(470 230) rotate(-15)">
+    <ellipse cx="-9" cy="-4" rx="10" ry="7" fill="#ff7043"/>
+    <ellipse cx="9" cy="-4" rx="10" ry="7" fill="#ff7043"/>
+    <ellipse cx="-7" cy="7" rx="6" ry="5" fill="#ffa726"/>
+    <ellipse cx="7" cy="7" rx="6" ry="5" fill="#ffa726"/>
+    <rect x="-1.5" y="-8" width="3" height="20" rx="1.5" fill="#4e342e"/>
+  </g>
+
+  <!-- ===== Manuelita ===== -->
+  <g transform="translate(20 0)">
+    <ellipse cx="370" cy="462" rx="170" ry="16" fill="#000" opacity=".15"/>
+
+    <!-- cola -->
+    <path d="M232 425 L200 440 L236 440 Z" fill="#9cc75a" stroke="#4f7a25" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- patas -->
+    <g fill="url(#skin)" stroke="#4f7a25" stroke-width="3">
+      <ellipse cx="270" cy="445" rx="22" ry="17"/>
+      <ellipse cx="330" cy="452" rx="22" ry="17"/>
+      <ellipse cx="410" cy="452" rx="22" ry="17"/>
+      <ellipse cx="465" cy="445" rx="22" ry="17"/>
+    </g>
+
+    <!-- cuello y cabeza -->
+    <path d="M465 400 Q500 390 510 360 L545 380 Q530 420 480 430 Z" fill="url(#skin)" stroke="#4f7a25" stroke-width="3"/>
+    <circle cx="535" cy="350" r="46" fill="url(#skin)" stroke="#4f7a25" stroke-width="3"/>
+
+    <!-- ojo -->
+    <ellipse cx="550" cy="340" rx="14" ry="17" fill="#fff" stroke="#4f7a25" stroke-width="2"/>
+    <circle cx="554" cy="343" r="8" fill="#3e2723"/>
+    <circle cx="557" cy="339" r="3" fill="#fff"/>
+    <path d="M540 322 l-5 -8 M549 320 l0 -9 M558 322 l5 -8" stroke="#3e2723" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- cachete y sonrisa -->
+    <circle cx="560" cy="370" r="9" fill="#ff8a80" opacity=".7"/>
+    <path d="M548 378 Q565 392 578 372" stroke="#3e2723" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+    <!-- sombrero con flor -->
+    <ellipse cx="528" cy="309" rx="52" ry="11" fill="#f8bbd0" stroke="#ad1457" stroke-width="3"/>
+    <path d="M500 308 Q500 270 530 268 Q558 270 556 308 Z" fill="#f8bbd0" stroke="#ad1457" stroke-width="3"/>
+    <path d="M501 298 Q528 305 555 298 L556 307 Q528 314 501 307 Z" fill="#7e57c2"/>
+    <g transform="translate(508 293)">
+      <circle cx="0" cy="-8" r="6" fill="#ffeb3b"/><circle cx="8" cy="0" r="6" fill="#ffeb3b"/>
+      <circle cx="0" cy="8" r="6" fill="#ffeb3b"/><circle cx="-8" cy="0" r="6" fill="#ffeb3b"/>
+      <circle r="5" fill="#ff7043"/>
+    </g>
+
+    <!-- caparazón -->
+    <path d="M236 425 Q240 300 365 292 Q490 300 494 425 Z" fill="url(#shell)" stroke="#33691e" stroke-width="4"/>
+    <g fill="#aed581" stroke="#33691e" stroke-width="3" opacity=".95">
+      <path d="M335 330 L365 315 L395 330 L395 365 L365 380 L335 365 Z"/>
+      <path d="M275 365 L305 352 L325 372 L318 405 L285 410 L265 392 Z"/>
+      <path d="M405 372 L425 352 L455 365 L465 392 L445 410 L412 405 Z"/>
+      <path d="M340 385 L365 392 L390 385 L398 415 L365 420 L332 415 Z"/>
+      <path d="M300 320 L325 318 L322 345 L300 348 L285 338 Z"/>
+      <path d="M405 318 L430 320 L445 338 L430 348 L408 345 Z"/>
+    </g>
+    <rect x="228" y="418" width="274" height="18" rx="9" fill="#c5e1a5" stroke="#33691e" stroke-width="3"/>
+    <!-- brillo -->
+    <path d="M280 330 Q300 305 335 300" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" opacity=".5"/>
+  </g>
+
+  <!-- corazones -->
+  <g fill="#ef5350">
+    <path d="M620 250 c-6 -10 -20 -4 -14 6 l14 14 l14 -14 c6 -10 -8 -16 -14 -6z"/>
+    <path d="M660 280 c-4 -7 -14 -3 -10 4 l10 10 l10 -10 c4 -7 -6 -11 -10 -4z" opacity=".8"/>
+  </g>
+</svg>`;
+
+// ---------- Estado del juego ----------
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const CW = canvas.width, CH = canvas.height;
+const BX = Math.round((CW - BOARD_W) / 2), BY = Math.round((CH - BOARD_H) / 2);
+
+const $ = id => document.getElementById(id);
+let img = null;
+let pieces = [];
+let cols = 4, rows = 3, pw = 0, ph = 0;
+let dragging = null, dragDX = 0, dragDY = 0;
+let showGhost = false;
+let moves = 0, startTime = 0, timerId = null, finished = false;
+
+function loadImage() {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([SVG], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const svgImg = new Image();
+    svgImg.onload = () => {
+      // rasteriza una vez para que el recorte de piezas sea rápido
+      const off = document.createElement('canvas');
+      off.width = BOARD_W; off.height = BOARD_H;
+      off.getContext('2d').drawImage(svgImg, 0, 0, BOARD_W, BOARD_H);
+      URL.revokeObjectURL(url);
+      resolve(off);
+    };
+    svgImg.onerror = reject;
+    svgImg.src = url;
+  });
+}
+
+// Forma de la pestaña del borde, en coordenadas (u a lo largo, v hacia afuera).
+function edgeTo(path, x0, y0, x1, y1, sign, size) {
+  if (sign === 0) { path.lineTo(x1, y1); return; }
+  const dx = x1 - x0, dy = y1 - y0;
+  const len = Math.hypot(dx, dy);
+  const ux = dx / len, uy = dy / len;
+  const nx = uy, ny = -ux; // normal hacia afuera (recorrido horario, eje y hacia abajo)
+  const P = (u, v) => [x0 + ux * u * len + nx * v * size * sign, y0 + uy * u * len + ny * v * size * sign];
+  path.lineTo(...P(0.36, 0));
+  path.bezierCurveTo(...P(0.44, 0), ...P(0.34, 0.24), ...P(0.5, 0.24));
+  path.bezierCurveTo(...P(0.66, 0.24), ...P(0.56, 0), ...P(0.64, 0));
+  path.lineTo(x1, y1);
+}
+
+function buildPieces() {
+  pw = BOARD_W / cols; ph = BOARD_H / rows;
+  const tab = Math.min(pw, ph);
+  const margin = Math.ceil(tab * 0.3);
+  const rnd = () => (Math.random() < 0.5 ? 1 : -1);
+  const hEdge = [...Array(rows - 1)].map(() => [...Array(cols)].map(rnd));
+  const vEdge = [...Array(rows)].map(() => [...Array(cols - 1)].map(rnd));
+
+  pieces = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * pw, y = r * ph;
+      const top = r === 0 ? 0 : -hEdge[r - 1][c];
+      const right = c === cols - 1 ? 0 : vEdge[r][c];
+      const bottom = r === rows - 1 ? 0 : hEdge[r][c];
+      const left = c === 0 ? 0 : -vEdge[r][c - 1];
+
+      // camino en coordenadas locales de la pieza (origen = esquina sup-izq sin márgenes)
+      const path = new Path2D();
+      path.moveTo(0, 0);
+      edgeTo(path, 0, 0, pw, 0, top, tab);
+      edgeTo(path, pw, 0, pw, ph, right, tab);
+      edgeTo(path, pw, ph, 0, ph, bottom, tab);
+      edgeTo(path, 0, ph, 0, 0, left, tab);
+      path.closePath();
+
+      // pre-render de la pieza
+      const pc = document.createElement('canvas');
+      pc.width = Math.ceil(pw + margin * 2);
+      pc.height = Math.ceil(ph + margin * 2);
+      const g = pc.getContext('2d');
+      g.translate(margin, margin);
+      g.save();
+      g.clip(path);
+      g.drawImage(img, -x, -y);
+      g.restore();
+      g.lineWidth = 2;
+      g.strokeStyle = 'rgba(255,255,255,.7)';
+      g.stroke(path);
+      g.lineWidth = 1;
+      g.strokeStyle = 'rgba(0,0,0,.35)';
+      g.stroke(path);
+
+      pieces.push({ r, c, homeX: BX + x, homeY: BY + y, x: 0, y: 0, path, canvas: pc, margin, placed: false });
+    }
+  }
+}
+
+function scatter() {
+  // casilleros libres alrededor del tablero; si no alcanzan, se permiten encima
+  const sp = Math.min(pw, ph) * 0.3;
+  const stepX = pw + sp, stepY = ph + sp;
+  const free = [], over = [];
+  for (let y = sp; y + ph + sp <= CH; y += stepY) {
+    for (let x = sp; x + pw + sp <= CW; x += stepX) {
+      const overlaps = x + pw > BX - sp && x < BX + BOARD_W + sp && y + ph > BY - sp && y < BY + BOARD_H + sp;
+      (overlaps ? over : free).push([x, y]);
+    }
+  }
+  const shuffle = a => a.sort(() => Math.random() - 0.5);
+  const slots = shuffle(free).concat(shuffle(over));
+  const jitter = () => (Math.random() - 0.5) * sp;
+  pieces.forEach((p, i) => {
+    p.placed = false;
+    const [x, y] = slots[i % slots.length];
+    p.x = Math.max(0, Math.min(CW - pw, x + jitter()));
+    p.y = Math.max(0, Math.min(CH - ph, y + jitter()));
+  });
+  shuffle(pieces);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, CW, CH);
+
+  // tablero
+  ctx.fillStyle = '#f7f0da';
+  ctx.strokeStyle = '#cbbd92';
+  ctx.lineWidth = 3;
+  ctx.fillRect(BX, BY, BOARD_W, BOARD_H);
+  ctx.strokeRect(BX - 1.5, BY - 1.5, BOARD_W + 3, BOARD_H + 3);
+  if (showGhost) {
+    ctx.globalAlpha = 0.3;
+    ctx.drawImage(img, BX, BY);
+    ctx.globalAlpha = 1;
+  }
+
+  for (const p of pieces) {
+    const lifted = p === dragging;
+    if (lifted) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,.35)';
+      ctx.shadowBlur = 16;
+      ctx.shadowOffsetY = 6;
+    } else if (!p.placed) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,.25)';
+      ctx.shadowBlur = 5;
+      ctx.shadowOffsetY = 2;
+    }
+    ctx.drawImage(p.canvas, p.x - p.margin, p.y - p.margin);
+    if (lifted || !p.placed) ctx.restore();
+  }
+}
+
+// ---------- Interacción ----------
+function toCanvas(e) {
+  const rect = canvas.getBoundingClientRect();
+  return [(e.clientX - rect.left) * CW / rect.width, (e.clientY - rect.top) * CH / rect.height];
+}
+
+function pieceAt(x, y) {
+  for (let i = pieces.length - 1; i >= 0; i--) {
+    const p = pieces[i];
+    if (p.placed) continue;
+    if (ctx.isPointInPath(p.path, x - p.x, y - p.y)) return i;
+  }
+  return -1;
+}
+
+canvas.addEventListener('pointerdown', e => {
+  if (finished) return;
+  const [x, y] = toCanvas(e);
+  const i = pieceAt(x, y);
+  if (i < 0) return;
+  const p = pieces.splice(i, 1)[0];
+  pieces.push(p);
+  dragging = p;
+  dragDX = x - p.x; dragDY = y - p.y;
+  canvas.setPointerCapture(e.pointerId);
+  if (!timerId) startTimer();
+  draw();
+});
+
+canvas.addEventListener('pointermove', e => {
+  const [x, y] = toCanvas(e);
+  if (!dragging) {
+    canvas.style.cursor = pieceAt(x, y) >= 0 ? 'grab' : 'default';
+    return;
+  }
+  canvas.style.cursor = 'grabbing';
+  dragging.x = Math.max(-pw / 2, Math.min(CW - pw / 2, x - dragDX));
+  dragging.y = Math.max(-ph / 2, Math.min(CH - ph / 2, y - dragDY));
+  draw();
+});
+
+function drop() {
+  if (!dragging) return;
+  const p = dragging;
+  dragging = null;
+  moves++;
+  const snap = Math.min(pw, ph) * 0.25;
+  if (Math.hypot(p.x - p.homeX, p.y - p.homeY) < snap) {
+    p.x = p.homeX; p.y = p.homeY; p.placed = true;
+    // las piezas colocadas van al fondo
+    pieces.splice(pieces.indexOf(p), 1);
+    pieces.unshift(p);
+  }
+  updateStats();
+  draw();
+  if (pieces.every(q => q.placed)) win();
+}
+canvas.addEventListener('pointerup', drop);
+canvas.addEventListener('pointercancel', drop);
+
+// ---------- Tiempo, estadísticas y victoria ----------
+function fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function elapsed() { return Math.floor((Date.now() - startTime) / 1000); }
+function startTimer() {
+  startTime = Date.now();
+  timerId = setInterval(() => { $('time').textContent = fmt(elapsed()); }, 500);
+}
+function stopTimer() { clearInterval(timerId); timerId = null; }
+
+function updateStats() {
+  $('moves').textContent = moves;
+  $('placed').textContent = pieces.filter(p => p.placed).length;
+  $('total').textContent = pieces.length;
+}
+
+function win() {
+  finished = true;
+  const secs = elapsed();
+  stopTimer();
+  $('time').textContent = fmt(secs);
+  $('winText').textContent = `Armaste ${pieces.length} piezas en ${fmt(secs)} con ${moves} movimientos.`;
+  $('win').classList.add('show');
+}
+
+function newGame() {
+  const [c, r] = $('level').value.split('x').map(Number);
+  cols = c; rows = r;
+  stopTimer();
+  $('time').textContent = '0:00';
+  moves = 0; finished = false; dragging = null;
+  $('win').classList.remove('show');
+  buildPieces();
+  scatter();
+  updateStats();
+  draw();
+}
+
+$('shuffle').addEventListener('click', newGame);
+$('again').addEventListener('click', newGame);
+$('level').addEventListener('change', newGame);
+$('ghost').addEventListener('click', () => {
+  showGhost = !showGhost;
+  $('ghost').textContent = showGhost ? 'Ocultar guía' : 'Ver guía';
+  draw();
+});
+
+loadImage().then(i => { img = i; newGame(); });
+</script>
+</body>
+</html>
