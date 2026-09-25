@@ -8,6 +8,7 @@ Abrí `index.html` en un navegador moderno con WebGL 2. No requiere instalación
 
 - Arrastrá una pieza con mouse o dedo: se levanta de la mesa y encaja al acercarse a su lugar.
 - Elegí entre 9, 12, 20, 30 o 48 piezas.
+- **📷 Tu foto** arma el rompecabezas con una imagen propia (también podés arrastrarla a la mesa). Se recorta al formato 4:3 y queda guardada en tu navegador; el botón 🐢 vuelve a la postal de Manuelita.
 - **Guía** superpone la postal completa sobre el tablero.
 - **Pista** coloca una pieza; hay tres por partida y los récords se registran solo sin pistas.
 - **Vista cenital** alterna entre una cámara inclinada y una vista desde arriba.
@@ -21,7 +22,7 @@ La escena incluye piezas extruidas con bordes dorados, sombras, una miniatura de
 
 Los controles pueden usarse con Tab. Con foco en la mesa, Enter selecciona la siguiente pieza disponible, las flechas la mueven (Shift permite ajustar en pasos pequeños), Enter la suelta y Escape cancela. Los diálogos retienen el foco y se cierran con Escape. Se respeta `prefers-reduced-motion`.
 
-Los mejores tiempos se guardan únicamente en `localStorage` del navegador. No hay cuentas, backend ni analítica. Las conexiones externas se limitan al motor 3D y las fuentes.
+Los mejores tiempos y la foto elegida se guardan únicamente en `localStorage` del navegador; la foto nunca se sube a ningún servidor. No hay cuentas, backend ni analítica. Las conexiones externas se limitan al motor 3D y las fuentes.
 
 ## Publicación
 
@@ -37,4 +38,4 @@ npx playwright install chromium
 npm test
 ```
 
-La prueba inicia un servidor HTTP local y un navegador temporal. Verifica arrastre real, encaje, victoria, teclado, pistas, reinicios, las cinco dificultades, pantalla móvil, arrastre táctil y manejo de fallos de red. No interactúa con sesiones personales del navegador. Requiere internet para cargar Three.js.
+La prueba inicia un servidor HTTP local y un navegador temporal. Verifica arrastre real, subida de fotos propias, encaje, victoria, teclado, pistas, reinicios, las cinco dificultades, pantalla móvil, arrastre táctil y manejo de fallos de red. No interactúa con sesiones personales del navegador. Requiere internet para cargar Three.js.
