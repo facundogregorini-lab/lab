@@ -1,532 +1,152 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rompecabezas de Manuelita</title>
+<meta name="theme-color" content="#102d29">
+<title>Manuelita · Un pequeño gran viaje</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐢%3C/text%3E%3C/svg%3E">
 <style>
-  :root {
-    --bg: #fdf6e3;
-    --panel: #ffffff;
-    --ink: #3b3a30;
-    --accent: #3f9e5a;
-    --accent-dark: #2d7543;
-    --muted: #8a8570;
-    --board: #efe6cc;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  header { text-align: center; padding: 16px 16px 4px; }
-  h1 { margin: 0; font-size: clamp(1.5rem, 4vw, 2.3rem); color: var(--accent-dark); }
-  header p { margin: 4px 0 0; color: var(--muted); }
-  .controls {
-    display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center;
-    padding: 12px 16px;
-  }
-  .controls label { font-weight: bold; }
-  select, button {
-    font: inherit; font-size: 1rem;
-    padding: 8px 14px; border-radius: 999px;
-    border: 2px solid var(--accent); background: var(--panel); color: var(--ink);
-    cursor: pointer;
-  }
-  button.primary { background: var(--accent); color: #fff; }
-  button:hover { filter: brightness(1.05); }
-  .stats { display: flex; gap: 16px; color: var(--muted); font-weight: bold; }
-  .wrap { width: 100%; max-width: 1400px; padding: 0 16px 24px; position: relative; }
-  canvas {
-    width: 100%; height: auto; display: block;
-    background: #e9dfc1; border-radius: 16px;
-    box-shadow: inset 0 0 0 3px #d8cba4;
-    touch-action: none;
-  }
-  .win {
-    position: absolute; inset: 0 16px 36px; display: none;
-    align-items: flex-end; justify-content: center; pointer-events: none;
-  }
-  .win.show { display: flex; }
-  .win div {
-    pointer-events: auto;
-    background: rgba(255,255,255,.95); padding: 24px 32px; border-radius: 20px;
-    text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.2);
-  }
-  .win h2 { margin: 0 0 8px; color: var(--accent-dark); }
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:ital,wght@0,500;0,600;1,500&display=swap');
+:root{color-scheme:dark;--cream:#fff1d3;--muted:#a9bdb1;--gold:#e9bc75;--green:#b9edbb;--line:#ffffff20}
+*{box-sizing:border-box}body{margin:0;background:#102d29;color:var(--cream);font-family:'DM Sans',system-ui,sans-serif;overflow:hidden}button,select{font:inherit}button{cursor:pointer}button:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:4px}button:disabled{opacity:.45;cursor:wait}button{color:inherit;border:1px solid var(--line);background:#183c34;border-radius:99px;padding:11px 17px;transition:background .2s,transform .2s}button:hover{background:#285247;transform:translateY(-1px)}button[aria-pressed=true]{background:#c6efbc;color:#163c2c}button.primary{background:var(--gold);color:#25382a;border:0;font-weight:700}button.primary:hover{background:#f5cf95}.icon{width:44px;height:44px;padding:0;font-size:19px}
+header{position:absolute;z-index:3;left:36px;right:36px;top:24px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:12px}.brand-mark{display:grid;place-items:center;width:43px;height:43px;border:1px solid #c7dbad60;border-radius:14px;font-size:24px;background:#ffffff08}.brand strong{font-family:Fraunces,Georgia,serif;font-size:27px;font-weight:500;letter-spacing:-1px}.brand small{display:block;font-size:9px;letter-spacing:3px;color:var(--muted);margin-top:2px}.head-right{display:flex;gap:8px;align-items:center}.edition{font-size:10px;letter-spacing:2px;color:var(--muted);margin-right:16px}
+.intro{position:absolute;top:92px;left:36px;z-index:2;pointer-events:none}.eyebrow{color:var(--gold);font-size:10px;font-weight:700;letter-spacing:2.8px;margin:0 0 10px}.intro h1{font-family:Fraunces,Georgia,serif;font-weight:500;font-size:clamp(26px,3vw,43px);line-height:1.1;margin:0;letter-spacing:-1.5px}.intro h1 em{color:var(--green);font-weight:500}.intro p:last-child{font-size:12px;color:var(--muted);margin-top:12px}.journey{position:absolute;right:36px;top:105px;z-index:2;width:230px}.route{display:flex;justify-content:space-between;font-size:10px;letter-spacing:1.5px}.route-line{height:2px;background:#ffffff21;margin-top:12px;position:relative}.route-line span{display:block;width:0;height:100%;background:var(--gold);transition:width .5s}.route-line:before,.route-line:after{content:'';position:absolute;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--gold)}.route-line:before{left:0}.route-line:after{right:0}.journey p{color:var(--muted);font-size:11px;text-align:right;margin-top:12px}
+#stage{position:absolute;inset:178px 0 98px;touch-action:none}#stage canvas{display:block;width:100%;height:100%;outline:none}#stage canvas:focus-visible{outline:2px solid var(--gold);outline-offset:-4px}.stage-tag{position:absolute;bottom:108px;left:36px;z-index:2;font-size:9px;letter-spacing:2px;color:#aac9b4;pointer-events:none}.stage-tag b{display:inline-block;width:5px;height:5px;background:var(--green);border-radius:50%;margin-right:8px}.ref{position:absolute;top:205px;left:36px;z-index:2;width:148px;transform:rotate(-5deg);padding:8px 8px 12px;background:#f5e6cb;box-shadow:0 10px 30px #0003;border-radius:3px;color:#526347;pointer-events:none}.ref img{display:block;width:100%;border-radius:2px}.ref span{display:block;text-align:center;font:italic 14px Fraunces,Georgia,serif;margin-top:8px}.ref .stamp{position:absolute;right:-7px;top:-12px;border-radius:50%;background:#d69b5c;color:#fff9e5;padding:7px;font-size:10px;transform:rotate(20deg)}
+.toolbar{position:absolute;z-index:3;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:20px;background:#173c32ed;border:1px solid #5e806244;border-radius:22px;padding:14px 20px;box-shadow:0 12px 40px #0002;white-space:nowrap;backdrop-filter:blur(14px)}.field{display:flex;align-items:center;gap:10px}.field label{font-size:10px;color:var(--muted)}select{appearance:none;background:#234c3e;color:var(--cream);border:1px solid var(--line);border-radius:10px;padding:10px 28px 10px 12px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='m3 4 3 3 3-3' fill='none' stroke='%23e9bc75'/%3E%3C/svg%3E");background-position:right 8px center;background-repeat:no-repeat}.divider{height:30px;width:1px;background:var(--line)}.stats{display:flex;gap:23px}.stat strong{font-variant-numeric:tabular-nums;font-size:17px;font-weight:500}.stat small{display:block;color:var(--muted);font-size:9px;margin-top:3px;letter-spacing:1px}.actions{display:flex;gap:7px}.actions button{font-size:12px;padding:10px 13px}
+#toast{position:absolute;z-index:4;left:50%;bottom:115px;transform:translateX(-50%) translateY(8px);opacity:0;padding:10px 18px;border-radius:30px;background:#eff6d9;color:#224132;font-size:12px;pointer-events:none;transition:opacity .2s,transform .2s;text-align:center;max-width:90vw}#toast.visible{opacity:1;transform:translateX(-50%) translateY(0)}
+.veil{position:fixed;inset:0;z-index:10;background:#0b2829d9;backdrop-filter:blur(14px);display:grid;place-items:center;padding:22px}.veil[hidden]{display:none}.card{max-width:440px;width:100%;padding:38px;border:1px solid #c3dbaf33;border-radius:28px;background:linear-gradient(145deg,#254f40,#132f2a);text-align:center;box-shadow:0 30px 90px #0004}.card h2{font:500 35px/1.1 Fraunces,Georgia,serif;letter-spacing:-1px;margin:17px 0}.card p{font-size:14px;color:#bbcec0;line-height:1.7}.card .big{font-size:53px}.card button{margin-top:12px}.card .badge{color:var(--gold);letter-spacing:3px;font-size:10px}.card ul{text-align:left;font-size:13px;color:#cbdacc;line-height:1.8;padding-left:18px}.card .results{display:flex;justify-content:center;gap:32px;margin:24px 0}.results b{font:500 29px Fraunces,Georgia,serif}.results small{display:block;font-size:10px;color:var(--muted);margin-top:7px}.spinner{width:34px;height:34px;margin:auto;border:2px solid #ffffff20;border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:1000px){.ref{width:108px;left:20px;top:212px}.toolbar{gap:12px;padding:12px 15px}.stats{gap:13px}.edition{display:none}.field label{display:none}}
+@media(max-width:700px){header{left:18px;right:18px;top:16px}.brand strong{font-size:25px}.brand small{font-size:8px}.brand-mark{width:37px;height:37px;font-size:21px}.head-right{gap:5px}.icon{width:37px;height:37px}.intro{top:82px;left:20px}.intro h1{font-size:29px}.intro .eyebrow{font-size:9px;margin-bottom:7px}.intro p:last-child{font-size:11px;max-width:245px;line-height:1.5;margin-top:8px}.journey{top:101px;right:20px;width:88px}.route{font-size:8px;letter-spacing:0}.journey p{font-size:9px}.ref{display:none}#stage{inset:176px 0 150px}.toolbar{bottom:max(12px,env(safe-area-inset-bottom));width:calc(100% - 24px);flex-wrap:wrap;justify-content:space-between;padding:12px;gap:12px;border-radius:18px}.toolbar .divider{display:none}.stats{gap:18px}.stat strong{font-size:15px}.stat small{font-size:8px}.actions{width:100%;justify-content:space-between;gap:6px}.actions button{flex:1;padding:10px 6px;font-size:11px}.stage-tag{bottom:147px;left:20px;font-size:8px}#toast{bottom:152px}.card{padding:26px}.card h2{font-size:30px}}
+@media(max-height:650px) and (min-width:701px){.intro{top:78px}.intro h1{font-size:28px}.intro p:last-child,.ref,.journey{display:none}#stage{top:135px;bottom:92px}.toolbar{bottom:12px}.stage-tag{display:none}}
+.intro h1{font-size:clamp(26px,3vw,37px)}#stage{top:230px}.ref{left:auto;right:322px;top:91px;width:112px}.ref span{font-size:12px}.ref .stamp{font-size:8px;padding:5px}
+@media(max-width:1000px){.ref{display:none}}
+@media(max-width:700px){.intro h1{font-size:26px}.intro p:last-child{max-width:295px;font-size:10px;margin-bottom:0}.journey{left:20px;right:20px;top:198px;width:auto}.journey .route{font-size:8px;letter-spacing:1px}.route-line{margin-top:7px}.journey p{display:none}#stage{top:225px;bottom:132px}.toolbar{gap:10px}.toolbar select{max-width:165px;font-size:11px}.stats{gap:12px}.stat strong{font-size:13px}.stat small{font-size:7px}.stage-tag{bottom:122px}#toast{bottom:132px}}
+@media(max-height:650px) and (min-width:701px){#stage{top:145px}.intro h1{font-size:28px}}
+@media(max-width:380px){.toolbar select{width:130px;font-size:10px}.stats{gap:7px}.stat strong{font-size:12px}.brand strong{font-size:23px}.brand small{font-size:7px}.intro h1{font-size:24px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<header>
-  <h1>🐢 Rompecabezas de Manuelita</h1>
-  <p>Arrastrá las piezas y ayudá a la tortuga a llegar a París</p>
-</header>
-
-<div class="controls">
-  <label for="level">Piezas:</label>
-  <select id="level">
-    <option value="3x3">9 (fácil)</option>
-    <option value="4x3" selected>12</option>
-    <option value="5x4">20</option>
-    <option value="6x5">30</option>
-    <option value="8x6">48 (difícil)</option>
-  </select>
-  <button class="primary" id="shuffle">Mezclar</button>
-  <button id="ghost">Ver guía</button>
-  <div class="stats">
-    <span>⏱ <span id="time">0:00</span></span>
-    <span>✋ <span id="moves">0</span></span>
-    <span>🧩 <span id="placed">0</span>/<span id="total">0</span></span>
-  </div>
-</div>
-
-<div class="wrap">
-  <canvas id="c" width="1400" height="900"></canvas>
-  <div class="win" id="win">
-    <div>
-      <h2>¡Manuelita llegó a París! 🎉</h2>
-      <p id="winText"></p>
-      <button class="primary" id="again">Jugar otra vez</button>
-    </div>
-  </div>
-</div>
-
-<script>
-// ---------- Ilustración (SVG original) ----------
-const BOARD_W = 720, BOARD_H = 540;
-
-const SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${BOARD_W}" height="${BOARD_H}" viewBox="0 0 720 540">
-  <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#7ec8f0"/>
-      <stop offset="1" stop-color="#fdf1c7"/>
-    </linearGradient>
-    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8bc34a"/>
-      <stop offset="1" stop-color="#4f8a2a"/>
-    </linearGradient>
-    <radialGradient id="skin" cx=".4" cy=".35" r=".7">
-      <stop offset="0" stop-color="#d7ec9a"/>
-      <stop offset="1" stop-color="#9cc75a"/>
-    </radialGradient>
-  </defs>
-
-  <!-- cielo -->
-  <rect width="720" height="540" fill="url(#sky)"/>
-
-  <!-- sol -->
-  <g transform="translate(90 90)">
-    <g stroke="#f7b733" stroke-width="6" stroke-linecap="round">
-      <line x1="0" y1="-62" x2="0" y2="-80"/><line x1="0" y1="62" x2="0" y2="80"/>
-      <line x1="-62" y1="0" x2="-80" y2="0"/><line x1="62" y1="0" x2="80" y2="0"/>
-      <line x1="44" y1="44" x2="57" y2="57"/><line x1="-44" y1="-44" x2="-57" y2="-57"/>
-      <line x1="44" y1="-44" x2="57" y2="-57"/><line x1="-44" y1="44" x2="-57" y2="57"/>
-    </g>
-    <circle r="48" fill="#ffd54f"/>
-    <circle cx="-15" cy="-8" r="5" fill="#6d4c41"/>
-    <circle cx="15" cy="-8" r="5" fill="#6d4c41"/>
-    <path d="M-18 12 Q0 30 18 12" stroke="#6d4c41" stroke-width="4" fill="none" stroke-linecap="round"/>
-    <circle cx="-26" cy="8" r="7" fill="#ff8a65" opacity=".6"/>
-    <circle cx="26" cy="8" r="7" fill="#ff8a65" opacity=".6"/>
-  </g>
-
-  <!-- nubes -->
-  <g fill="#ffffff">
-    <g transform="translate(250 70)">
-      <circle cx="0" cy="10" r="22"/><circle cx="26" cy="0" r="28"/><circle cx="56" cy="10" r="22"/>
-      <rect x="0" y="10" width="56" height="22"/>
-    </g>
-    <g transform="translate(470 120) scale(.8)">
-      <circle cx="0" cy="10" r="22"/><circle cx="26" cy="0" r="28"/><circle cx="56" cy="10" r="22"/>
-      <rect x="0" y="10" width="56" height="22"/>
-    </g>
-  </g>
-
-  <!-- título -->
-  <text x="360" y="58" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
-        font-style="italic" font-weight="bold" font-size="46" fill="#2d7543"
-        stroke="#ffffff" stroke-width="6" paint-order="stroke">Manuelita</text>
-
-  <!-- torre Eiffel a lo lejos -->
-  <g transform="translate(620 118)" fill="#8d6e63">
-    <path d="M-4 0 L4 0 L6 30 L-6 30 Z"/>
-    <path d="M-7 30 L7 30 L14 95 L-14 95 Z"/>
-    <rect x="-18" y="92" width="36" height="7"/>
-    <path d="M-16 99 L16 99 L40 210 L22 210 Q0 160 -22 210 L-40 210 Z"/>
-    <rect x="-24" y="150" width="48" height="6"/>
-    <rect x="-1.5" y="-14" width="3" height="16"/>
-  </g>
-  <g transform="translate(620 118)">
-    <rect x="-9" y="-26" width="18" height="12" fill="#1e63b5"/>
-  </g>
-
-  <!-- lomas -->
-  <path d="M0 330 Q120 270 250 310 T520 300 T720 290 L720 540 L0 540 Z" fill="#9ccc65"/>
-  <path d="M0 380 Q160 330 330 370 T720 350 L720 540 L0 540 Z" fill="#7cb342"/>
-
-  <!-- camino de Pehuajó a París -->
-  <path d="M60 540 Q140 440 330 440 Q520 440 600 330 L640 330 Q570 470 380 480 Q200 490 170 540 Z"
-        fill="#e8c887" opacity=".95"/>
-
-  <!-- cartel -->
-  <g transform="translate(70 360)">
-    <rect x="-4" y="0" width="8" height="90" fill="#795548"/>
-    <path d="M-50 -2 L40 -2 L56 16 L40 34 L-50 34 Z" fill="#ffecb3" stroke="#795548" stroke-width="3"/>
-    <text x="-2" y="23" text-anchor="middle" font-family="Trebuchet MS, sans-serif" font-size="17"
-          font-weight="bold" fill="#5d4037">Pehuajó</text>
-  </g>
-  <g transform="translate(600 420)">
-    <rect x="-4" y="0" width="8" height="70" fill="#795548"/>
-    <path d="M-40 -2 L40 -2 L56 16 L40 34 L-40 34 Z" fill="#ffecb3" stroke="#795548" stroke-width="3"/>
-    <text x="4" y="23" text-anchor="middle" font-family="Trebuchet MS, sans-serif" font-size="17"
-          font-weight="bold" fill="#5d4037">París →</text>
-  </g>
-
-  <!-- flores -->
-  <g>
-    <g transform="translate(40 500)"><circle r="7" fill="#f06292"/><circle r="3" fill="#fff59d"/></g>
-    <g transform="translate(150 470)"><circle r="6" fill="#ba68c8"/><circle r="2.5" fill="#fff59d"/></g>
-    <g transform="translate(250 515)"><circle r="7" fill="#ffffff"/><circle r="3" fill="#ffb300"/></g>
-    <g transform="translate(470 520)"><circle r="6" fill="#f06292"/><circle r="2.5" fill="#fff59d"/></g>
-    <g transform="translate(680 500)"><circle r="7" fill="#ffffff"/><circle r="3" fill="#ffb300"/></g>
-    <g transform="translate(540 380)"><circle r="5" fill="#ba68c8"/><circle r="2" fill="#fff59d"/></g>
-    <g transform="translate(200 395)"><circle r="5" fill="#f06292"/><circle r="2" fill="#fff59d"/></g>
-  </g>
-
-  <!-- mariposa -->
-  <g transform="translate(470 230) rotate(-15)">
-    <ellipse cx="-9" cy="-4" rx="10" ry="7" fill="#ff7043"/>
-    <ellipse cx="9" cy="-4" rx="10" ry="7" fill="#ff7043"/>
-    <ellipse cx="-7" cy="7" rx="6" ry="5" fill="#ffa726"/>
-    <ellipse cx="7" cy="7" rx="6" ry="5" fill="#ffa726"/>
-    <rect x="-1.5" y="-8" width="3" height="20" rx="1.5" fill="#4e342e"/>
-  </g>
-
-  <!-- ===== Manuelita ===== -->
-  <g transform="translate(20 0)">
-    <ellipse cx="370" cy="462" rx="170" ry="16" fill="#000" opacity=".15"/>
-
-    <!-- cola -->
-    <path d="M232 425 L200 440 L236 440 Z" fill="#9cc75a" stroke="#4f7a25" stroke-width="3" stroke-linejoin="round"/>
-
-    <!-- patas -->
-    <g fill="url(#skin)" stroke="#4f7a25" stroke-width="3">
-      <ellipse cx="270" cy="445" rx="22" ry="17"/>
-      <ellipse cx="330" cy="452" rx="22" ry="17"/>
-      <ellipse cx="410" cy="452" rx="22" ry="17"/>
-      <ellipse cx="465" cy="445" rx="22" ry="17"/>
-    </g>
-
-    <!-- cuello y cabeza -->
-    <path d="M465 400 Q500 390 510 360 L545 380 Q530 420 480 430 Z" fill="url(#skin)" stroke="#4f7a25" stroke-width="3"/>
-    <circle cx="535" cy="350" r="46" fill="url(#skin)" stroke="#4f7a25" stroke-width="3"/>
-
-    <!-- ojo -->
-    <ellipse cx="550" cy="340" rx="14" ry="17" fill="#fff" stroke="#4f7a25" stroke-width="2"/>
-    <circle cx="554" cy="343" r="8" fill="#3e2723"/>
-    <circle cx="557" cy="339" r="3" fill="#fff"/>
-    <path d="M540 322 l-5 -8 M549 320 l0 -9 M558 322 l5 -8" stroke="#3e2723" stroke-width="2.5" stroke-linecap="round"/>
-
-    <!-- cachete y sonrisa -->
-    <circle cx="560" cy="370" r="9" fill="#ff8a80" opacity=".7"/>
-    <path d="M548 378 Q565 392 578 372" stroke="#3e2723" stroke-width="3" fill="none" stroke-linecap="round"/>
-
-    <!-- sombrero con flor -->
-    <ellipse cx="528" cy="309" rx="52" ry="11" fill="#f8bbd0" stroke="#ad1457" stroke-width="3"/>
-    <path d="M500 308 Q500 270 530 268 Q558 270 556 308 Z" fill="#f8bbd0" stroke="#ad1457" stroke-width="3"/>
-    <path d="M501 298 Q528 305 555 298 L556 307 Q528 314 501 307 Z" fill="#7e57c2"/>
-    <g transform="translate(508 293)">
-      <circle cx="0" cy="-8" r="6" fill="#ffeb3b"/><circle cx="8" cy="0" r="6" fill="#ffeb3b"/>
-      <circle cx="0" cy="8" r="6" fill="#ffeb3b"/><circle cx="-8" cy="0" r="6" fill="#ffeb3b"/>
-      <circle r="5" fill="#ff7043"/>
-    </g>
-
-    <!-- caparazón -->
-    <path d="M236 425 Q240 300 365 292 Q490 300 494 425 Z" fill="url(#shell)" stroke="#33691e" stroke-width="4"/>
-    <g fill="#aed581" stroke="#33691e" stroke-width="3" opacity=".95">
-      <path d="M335 330 L365 315 L395 330 L395 365 L365 380 L335 365 Z"/>
-      <path d="M275 365 L305 352 L325 372 L318 405 L285 410 L265 392 Z"/>
-      <path d="M405 372 L425 352 L455 365 L465 392 L445 410 L412 405 Z"/>
-      <path d="M340 385 L365 392 L390 385 L398 415 L365 420 L332 415 Z"/>
-      <path d="M300 320 L325 318 L322 345 L300 348 L285 338 Z"/>
-      <path d="M405 318 L430 320 L445 338 L430 348 L408 345 Z"/>
-    </g>
-    <rect x="228" y="418" width="274" height="18" rx="9" fill="#c5e1a5" stroke="#33691e" stroke-width="3"/>
-    <!-- brillo -->
-    <path d="M280 330 Q300 305 335 300" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" opacity=".5"/>
-  </g>
-
-  <!-- corazones -->
-  <g fill="#ef5350">
-    <path d="M620 250 c-6 -10 -20 -4 -14 6 l14 14 l14 -14 c6 -10 -8 -16 -14 -6z"/>
-    <path d="M660 280 c-4 -7 -14 -3 -10 4 l10 10 l10 -10 c4 -7 -6 -11 -10 -4z" opacity=".8"/>
-  </g>
-</svg>`;
-
-// ---------- Estado del juego ----------
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-const CW = canvas.width, CH = canvas.height;
-const BX = Math.round((CW - BOARD_W) / 2), BY = Math.round((CH - BOARD_H) / 2);
-
+<header><div class="brand"><div class="brand-mark" aria-hidden="true">🐢</div><div><strong>Manuelita</strong><small>UN PEQUEÑO GRAN VIAJE</small></div></div><div class="head-right"><span class="edition">LA EDICIÓN 3D</span><button class="icon" id="sound" title="Activar sonido" aria-label="Activar sonido" aria-pressed="false">♫</button><button class="icon" id="help" title="Cómo jugar" aria-label="Cómo jugar">?</button></div></header>
+<section class="intro"><p class="eyebrow">DE PEHUAJÓ, CON AMOR</p><h1>Las grandes aventuras<br>se arman <em>de a poquito.</em></h1><p>Uní las piezas. Encontrá el camino. ¡París nos espera!</p></section>
+<aside class="journey" aria-label="Progreso del viaje"><div class="route"><span>PEHUAJÓ</span><span>PARÍS ✦</span></div><div class="route-line"><span id="progress"></span></div><p id="journeyText">Tu aventura está por empezar</p></aside>
+<div class="ref"><div class="stamp">BON VOYAGE</div><img id="reference" alt="Imagen completa del rompecabezas de Manuelita"><span>Una postal de nuestro viaje</span></div>
+<main id="stage" aria-label="Mesa de rompecabezas tridimensional"></main>
+<div class="stage-tag"><b></b>ARRASTRÁ · ENCAJÁ · DISFRUTÁ</div>
+<nav class="toolbar" aria-label="Controles del juego"><div class="field"><label for="level">TU DESAFÍO</label><select id="level" aria-label="Cantidad de piezas"><option value="3x3">9 piezas · Paseo</option><option value="4x3" selected>12 piezas · Viaje</option><option value="5x4">20 piezas · Aventura</option><option value="6x5">30 piezas · Expedición</option><option value="8x6">48 piezas · Gran desafío</option></select></div><div class="divider"></div><div class="stats"><div class="stat"><strong id="placed">0 / 12</strong><small>PIEZAS</small></div><div class="stat"><strong id="time">0:00</strong><small>TIEMPO</small></div><div class="stat"><strong id="moves">0</strong><small>MOVIMIENTOS</small></div></div><div class="divider"></div><div class="actions"><button id="guide" aria-pressed="false">◉ Guía</button><button id="hint">✦ Pista <span id="hints">3</span></button><button id="view" aria-pressed="false">◇ Vista cenital</button><button id="restart" class="primary">↻ Reiniciar</button></div></nav>
+<div id="toast" role="status" aria-live="polite"></div>
+<div class="veil" id="loading"><div class="card"><div class="spinner"></div><h2>Preparando el viaje…</h2><p id="loadText">Un poquito de magia, una tortuga y muchas piezas.</p><button id="retry" hidden onclick="location.reload()">Volver a intentar</button></div></div>
+<div class="veil" id="helpModal" hidden role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="card"><div class="big">🐢</div><h2 id="helpTitle">A tu ritmo, como Manuelita.</h2><p>Arrastrá una pieza hasta su lugar en la postal. Al acercarte, se encaja con un pequeño destello.</p><ul><li><b>Guía:</b> muestra la imagen sobre el tablero.</li><li><b>Pista:</b> coloca una pieza. Tenés tres por partida.</li><li><b>Vista cenital:</b> mirá la mesa desde arriba.</li><li><b>Teclado:</b> enfocá la mesa, Enter elige una pieza, flechas la mueven y Enter la suelta. Escape cancela.</li></ul><button class="primary" id="closeHelp">¡Vamos a París!</button></div></div>
+<div class="veil" id="restartModal" hidden role="dialog" aria-modal="true" aria-labelledby="restartTitle"><div class="card"><h2 id="restartTitle">¿Empezamos otro viaje?</h2><p>Se reiniciarán las piezas, el tiempo y los movimientos de esta partida.</p><button id="cancelRestart">Seguir jugando</button> <button class="primary" id="confirmRestart">Sí, nueva partida</button></div></div>
+<div class="veil" id="winModal" hidden role="dialog" aria-modal="true" aria-labelledby="winTitle"><div class="card"><div class="big">🐢 ✦ 🗼</div><p class="badge">DE PEHUAJÓ AL MUNDO</p><h2 id="winTitle">¡París era solo<br>el comienzo!</h2><p>Con paciencia y un poquito de magia,<br>ayudaste a Manuelita a llegar.</p><div class="results"><div><b id="winTime"></b><small>TIEMPO</small></div><div><b id="winMoves"></b><small>MOVIMIENTOS</small></div></div><p id="best"></p><button class="primary" id="again">Otra pequeña gran aventura →</button><br><button id="admire">Contemplar mi obra</button></div></div>
+<noscript>Activá JavaScript para jugar al rompecabezas de Manuelita.</noscript>
+<script type="module">
+// Three.js is pinned; no build step and no account are needed.
 const $ = id => document.getElementById(id);
-let img = null;
-let pieces = [];
-let cols = 4, rows = 3, pw = 0, ph = 0;
-let dragging = null, dragDX = 0, dragDY = 0;
-let showGhost = false;
-let moves = 0, startTime = 0, timerId = null, finished = false;
-
-function loadImage() {
-  return new Promise((resolve, reject) => {
-    const blob = new Blob([SVG], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const svgImg = new Image();
-    svgImg.onload = () => {
-      // rasteriza una vez para que el recorte de piezas sea rápido
-      const off = document.createElement('canvas');
-      off.width = BOARD_W; off.height = BOARD_H;
-      off.getContext('2d').drawImage(svgImg, 0, 0, BOARD_W, BOARD_H);
-      URL.revokeObjectURL(url);
-      resolve(off);
-    };
-    svgImg.onerror = reject;
-    svgImg.src = url;
-  });
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SVG = "\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"720\" height=\"540\" viewBox=\"0 0 720 540\">\n  <defs>\n    <linearGradient id=\"sky\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0\" stop-color=\"#7ec8f0\"/>\n      <stop offset=\"1\" stop-color=\"#fdf1c7\"/>\n    </linearGradient>\n    <linearGradient id=\"shell\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0\" stop-color=\"#8bc34a\"/>\n      <stop offset=\"1\" stop-color=\"#4f8a2a\"/>\n    </linearGradient>\n    <radialGradient id=\"skin\" cx=\".4\" cy=\".35\" r=\".7\">\n      <stop offset=\"0\" stop-color=\"#d7ec9a\"/>\n      <stop offset=\"1\" stop-color=\"#9cc75a\"/>\n    </radialGradient>\n  </defs>\n\n  <!-- cielo -->\n  <rect width=\"720\" height=\"540\" fill=\"url(#sky)\"/>\n\n  <!-- sol -->\n  <g transform=\"translate(90 90)\">\n    <g stroke=\"#f7b733\" stroke-width=\"6\" stroke-linecap=\"round\">\n      <line x1=\"0\" y1=\"-62\" x2=\"0\" y2=\"-80\"/><line x1=\"0\" y1=\"62\" x2=\"0\" y2=\"80\"/>\n      <line x1=\"-62\" y1=\"0\" x2=\"-80\" y2=\"0\"/><line x1=\"62\" y1=\"0\" x2=\"80\" y2=\"0\"/>\n      <line x1=\"44\" y1=\"44\" x2=\"57\" y2=\"57\"/><line x1=\"-44\" y1=\"-44\" x2=\"-57\" y2=\"-57\"/>\n      <line x1=\"44\" y1=\"-44\" x2=\"57\" y2=\"-57\"/><line x1=\"-44\" y1=\"44\" x2=\"-57\" y2=\"57\"/>\n    </g>\n    <circle r=\"48\" fill=\"#ffd54f\"/>\n    <circle cx=\"-15\" cy=\"-8\" r=\"5\" fill=\"#6d4c41\"/>\n    <circle cx=\"15\" cy=\"-8\" r=\"5\" fill=\"#6d4c41\"/>\n    <path d=\"M-18 12 Q0 30 18 12\" stroke=\"#6d4c41\" stroke-width=\"4\" fill=\"none\" stroke-linecap=\"round\"/>\n    <circle cx=\"-26\" cy=\"8\" r=\"7\" fill=\"#ff8a65\" opacity=\".6\"/>\n    <circle cx=\"26\" cy=\"8\" r=\"7\" fill=\"#ff8a65\" opacity=\".6\"/>\n  </g>\n\n  <!-- nubes -->\n  <g fill=\"#ffffff\">\n    <g transform=\"translate(250 70)\">\n      <circle cx=\"0\" cy=\"10\" r=\"22\"/><circle cx=\"26\" cy=\"0\" r=\"28\"/><circle cx=\"56\" cy=\"10\" r=\"22\"/>\n      <rect x=\"0\" y=\"10\" width=\"56\" height=\"22\"/>\n    </g>\n    <g transform=\"translate(470 120) scale(.8)\">\n      <circle cx=\"0\" cy=\"10\" r=\"22\"/><circle cx=\"26\" cy=\"0\" r=\"28\"/><circle cx=\"56\" cy=\"10\" r=\"22\"/>\n      <rect x=\"0\" y=\"10\" width=\"56\" height=\"22\"/>\n    </g>\n  </g>\n\n  <!-- título -->\n  <text x=\"360\" y=\"58\" text-anchor=\"middle\" font-family=\"Georgia, 'Times New Roman', serif\"\n        font-style=\"italic\" font-weight=\"bold\" font-size=\"46\" fill=\"#2d7543\"\n        stroke=\"#ffffff\" stroke-width=\"6\" paint-order=\"stroke\">Manuelita</text>\n\n  <!-- torre Eiffel a lo lejos -->\n  <g transform=\"translate(620 118)\" fill=\"#8d6e63\">\n    <path d=\"M-4 0 L4 0 L6 30 L-6 30 Z\"/>\n    <path d=\"M-7 30 L7 30 L14 95 L-14 95 Z\"/>\n    <rect x=\"-18\" y=\"92\" width=\"36\" height=\"7\"/>\n    <path d=\"M-16 99 L16 99 L40 210 L22 210 Q0 160 -22 210 L-40 210 Z\"/>\n    <rect x=\"-24\" y=\"150\" width=\"48\" height=\"6\"/>\n    <rect x=\"-1.5\" y=\"-14\" width=\"3\" height=\"16\"/>\n  </g>\n  <g transform=\"translate(620 118)\">\n    <rect x=\"-9\" y=\"-26\" width=\"18\" height=\"12\" fill=\"#1e63b5\"/>\n  </g>\n\n  <!-- lomas -->\n  <path d=\"M0 330 Q120 270 250 310 T520 300 T720 290 L720 540 L0 540 Z\" fill=\"#9ccc65\"/>\n  <path d=\"M0 380 Q160 330 330 370 T720 350 L720 540 L0 540 Z\" fill=\"#7cb342\"/>\n\n  <!-- camino de Pehuajó a París -->\n  <path d=\"M60 540 Q140 440 330 440 Q520 440 600 330 L640 330 Q570 470 380 480 Q200 490 170 540 Z\"\n        fill=\"#e8c887\" opacity=\".95\"/>\n\n  <!-- cartel -->\n  <g transform=\"translate(70 360)\">\n    <rect x=\"-4\" y=\"0\" width=\"8\" height=\"90\" fill=\"#795548\"/>\n    <path d=\"M-50 -2 L40 -2 L56 16 L40 34 L-50 34 Z\" fill=\"#ffecb3\" stroke=\"#795548\" stroke-width=\"3\"/>\n    <text x=\"-2\" y=\"23\" text-anchor=\"middle\" font-family=\"Trebuchet MS, sans-serif\" font-size=\"17\"\n          font-weight=\"bold\" fill=\"#5d4037\">Pehuajó</text>\n  </g>\n  <g transform=\"translate(600 420)\">\n    <rect x=\"-4\" y=\"0\" width=\"8\" height=\"70\" fill=\"#795548\"/>\n    <path d=\"M-40 -2 L40 -2 L56 16 L40 34 L-40 34 Z\" fill=\"#ffecb3\" stroke=\"#795548\" stroke-width=\"3\"/>\n    <text x=\"4\" y=\"23\" text-anchor=\"middle\" font-family=\"Trebuchet MS, sans-serif\" font-size=\"17\"\n          font-weight=\"bold\" fill=\"#5d4037\">París →</text>\n  </g>\n\n  <!-- flores -->\n  <g>\n    <g transform=\"translate(40 500)\"><circle r=\"7\" fill=\"#f06292\"/><circle r=\"3\" fill=\"#fff59d\"/></g>\n    <g transform=\"translate(150 470)\"><circle r=\"6\" fill=\"#ba68c8\"/><circle r=\"2.5\" fill=\"#fff59d\"/></g>\n    <g transform=\"translate(250 515)\"><circle r=\"7\" fill=\"#ffffff\"/><circle r=\"3\" fill=\"#ffb300\"/></g>\n    <g transform=\"translate(470 520)\"><circle r=\"6\" fill=\"#f06292\"/><circle r=\"2.5\" fill=\"#fff59d\"/></g>\n    <g transform=\"translate(680 500)\"><circle r=\"7\" fill=\"#ffffff\"/><circle r=\"3\" fill=\"#ffb300\"/></g>\n    <g transform=\"translate(540 380)\"><circle r=\"5\" fill=\"#ba68c8\"/><circle r=\"2\" fill=\"#fff59d\"/></g>\n    <g transform=\"translate(200 395)\"><circle r=\"5\" fill=\"#f06292\"/><circle r=\"2\" fill=\"#fff59d\"/></g>\n  </g>\n\n  <!-- mariposa -->\n  <g transform=\"translate(470 230) rotate(-15)\">\n    <ellipse cx=\"-9\" cy=\"-4\" rx=\"10\" ry=\"7\" fill=\"#ff7043\"/>\n    <ellipse cx=\"9\" cy=\"-4\" rx=\"10\" ry=\"7\" fill=\"#ff7043\"/>\n    <ellipse cx=\"-7\" cy=\"7\" rx=\"6\" ry=\"5\" fill=\"#ffa726\"/>\n    <ellipse cx=\"7\" cy=\"7\" rx=\"6\" ry=\"5\" fill=\"#ffa726\"/>\n    <rect x=\"-1.5\" y=\"-8\" width=\"3\" height=\"20\" rx=\"1.5\" fill=\"#4e342e\"/>\n  </g>\n\n  <!-- ===== Manuelita ===== -->\n  <g transform=\"translate(20 0)\">\n    <ellipse cx=\"370\" cy=\"462\" rx=\"170\" ry=\"16\" fill=\"#000\" opacity=\".15\"/>\n\n    <!-- cola -->\n    <path d=\"M232 425 L200 440 L236 440 Z\" fill=\"#9cc75a\" stroke=\"#4f7a25\" stroke-width=\"3\" stroke-linejoin=\"round\"/>\n\n    <!-- patas -->\n    <g fill=\"url(#skin)\" stroke=\"#4f7a25\" stroke-width=\"3\">\n      <ellipse cx=\"270\" cy=\"445\" rx=\"22\" ry=\"17\"/>\n      <ellipse cx=\"330\" cy=\"452\" rx=\"22\" ry=\"17\"/>\n      <ellipse cx=\"410\" cy=\"452\" rx=\"22\" ry=\"17\"/>\n      <ellipse cx=\"465\" cy=\"445\" rx=\"22\" ry=\"17\"/>\n    </g>\n\n    <!-- cuello y cabeza -->\n    <path d=\"M465 400 Q500 390 510 360 L545 380 Q530 420 480 430 Z\" fill=\"url(#skin)\" stroke=\"#4f7a25\" stroke-width=\"3\"/>\n    <circle cx=\"535\" cy=\"350\" r=\"46\" fill=\"url(#skin)\" stroke=\"#4f7a25\" stroke-width=\"3\"/>\n\n    <!-- ojo -->\n    <ellipse cx=\"550\" cy=\"340\" rx=\"14\" ry=\"17\" fill=\"#fff\" stroke=\"#4f7a25\" stroke-width=\"2\"/>\n    <circle cx=\"554\" cy=\"343\" r=\"8\" fill=\"#3e2723\"/>\n    <circle cx=\"557\" cy=\"339\" r=\"3\" fill=\"#fff\"/>\n    <path d=\"M540 322 l-5 -8 M549 320 l0 -9 M558 322 l5 -8\" stroke=\"#3e2723\" stroke-width=\"2.5\" stroke-linecap=\"round\"/>\n\n    <!-- cachete y sonrisa -->\n    <circle cx=\"560\" cy=\"370\" r=\"9\" fill=\"#ff8a80\" opacity=\".7\"/>\n    <path d=\"M548 378 Q565 392 578 372\" stroke=\"#3e2723\" stroke-width=\"3\" fill=\"none\" stroke-linecap=\"round\"/>\n\n    <!-- sombrero con flor -->\n    <ellipse cx=\"528\" cy=\"309\" rx=\"52\" ry=\"11\" fill=\"#f8bbd0\" stroke=\"#ad1457\" stroke-width=\"3\"/>\n    <path d=\"M500 308 Q500 270 530 268 Q558 270 556 308 Z\" fill=\"#f8bbd0\" stroke=\"#ad1457\" stroke-width=\"3\"/>\n    <path d=\"M501 298 Q528 305 555 298 L556 307 Q528 314 501 307 Z\" fill=\"#7e57c2\"/>\n    <g transform=\"translate(508 293)\">\n      <circle cx=\"0\" cy=\"-8\" r=\"6\" fill=\"#ffeb3b\"/><circle cx=\"8\" cy=\"0\" r=\"6\" fill=\"#ffeb3b\"/>\n      <circle cx=\"0\" cy=\"8\" r=\"6\" fill=\"#ffeb3b\"/><circle cx=\"-8\" cy=\"0\" r=\"6\" fill=\"#ffeb3b\"/>\n      <circle r=\"5\" fill=\"#ff7043\"/>\n    </g>\n\n    <!-- caparazón -->\n    <path d=\"M236 425 Q240 300 365 292 Q490 300 494 425 Z\" fill=\"url(#shell)\" stroke=\"#33691e\" stroke-width=\"4\"/>\n    <g fill=\"#aed581\" stroke=\"#33691e\" stroke-width=\"3\" opacity=\".95\">\n      <path d=\"M335 330 L365 315 L395 330 L395 365 L365 380 L335 365 Z\"/>\n      <path d=\"M275 365 L305 352 L325 372 L318 405 L285 410 L265 392 Z\"/>\n      <path d=\"M405 372 L425 352 L455 365 L465 392 L445 410 L412 405 Z\"/>\n      <path d=\"M340 385 L365 392 L390 385 L398 415 L365 420 L332 415 Z\"/>\n      <path d=\"M300 320 L325 318 L322 345 L300 348 L285 338 Z\"/>\n      <path d=\"M405 318 L430 320 L445 338 L430 348 L408 345 Z\"/>\n    </g>\n    <rect x=\"228\" y=\"418\" width=\"274\" height=\"18\" rx=\"9\" fill=\"#c5e1a5\" stroke=\"#33691e\" stroke-width=\"3\"/>\n    <!-- brillo -->\n    <path d=\"M280 330 Q300 305 335 300\" stroke=\"#fff\" stroke-width=\"6\" fill=\"none\" stroke-linecap=\"round\" opacity=\".5\"/>\n  </g>\n\n  <!-- corazones -->\n  <g fill=\"#ef5350\">\n    <path d=\"M620 250 c-6 -10 -20 -4 -14 6 l14 14 l14 -14 c6 -10 -8 -16 -14 -6z\"/>\n    <path d=\"M660 280 c-4 -7 -14 -3 -10 4 l10 10 l10 -10 c4 -7 -6 -11 -10 -4z\" opacity=\".8\"/>\n  </g>\n</svg>";
+const imageURL = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(SVG);
+$('reference').src = imageURL;
+let THREE;
+try { THREE = await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js'); }
+catch (error) { fail('No pudimos cargar el motor 3D. Revisá tu conexión a internet y volvé a intentar.'); }
+function fail(message) { $('loading').hidden=false; $('loading').querySelector('.spinner').hidden=true; $('loading').querySelector('h2').textContent='El viaje necesita una ayudita'; $('loadText').textContent=message; $('retry').hidden=false; }
+if (THREE) { try { await boot(); } catch(error) { console.error(error); fail('No se pudo iniciar el juego 3D. Probá recargar o usar un navegador con WebGL 2 y aceleración gráfica activada.'); } }
+async function boot() {
+const stage=$('stage'), scene=new THREE.Scene();
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+stage.appendChild(renderer.domElement); const canvas=renderer.domElement; canvas.tabIndex=0; canvas.setAttribute('aria-label','Rompecabezas: Enter selecciona, flechas mueven, Enter suelta, Escape cancela');
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();fail('Se interrumpió la conexión con la tarjeta gráfica. Recargá para iniciar una nueva partida.');});
+const camera=new THREE.PerspectiveCamera(34,1,.1,120); const target=new THREE.Vector3(0,0,0);
+scene.add(new THREE.HemisphereLight(0xfff5de,0x446b64,1.65));
+const sun=new THREE.DirectionalLight(0xffecd2,2.2);sun.position.set(-5,9,18);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-18,right:18,top:16,bottom:-16,near:1,far:60});sun.shadow.normalBias=.035;scene.add(sun);
+const fill=new THREE.DirectionalLight(0xb4ffdb,.8);fill.position.set(9,-3,7);scene.add(fill);
+const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.65,...extra});
+const gold=mat(0xc88f43,{metalness:.55,roughness:.35}), dark=mat(0x244d3d), green=mat(0x83ad46), cream=mat(0xe7dcba);
+function mesh(geometry,material,parent=scene,x=0,y=0,z=0){const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;}
+function ball(parent,x,y,z,sx,sy,sz,material){const o=mesh(new THREE.SphereGeometry(1,28,20),material,parent,x,y,z);o.scale.set(sx,sy,sz);return o;}
+function box(parent,x,y,z,w,h,d,material){return mesh(new THREE.BoxGeometry(w,h,d),material,parent,x,y,z);}
+function rounded(w,h,r){const s=new THREE.Shape(),x=-w/2,y=-h/2;s.moveTo(x+r,y);s.lineTo(x+w-r,y);s.quadraticCurveTo(x+w,y,x+w,y+r);s.lineTo(x+w,y+h-r);s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);s.lineTo(x+r,y+h);s.quadraticCurveTo(x,y+h,x,y+h-r);s.lineTo(x,y+r);s.quadraticCurveTo(x,y,x+r,y);return s;}
+function slab(w,h,r,d,material,z,parent=scene){return mesh(new THREE.ExtrudeGeometry(rounded(w,h,r),{depth:d,bevelEnabled:true,bevelSize:.07,bevelThickness:.055,bevelSegments:3,steps:1}),material,parent,0,0,z);}
+const table=slab(21.8,13.4,1.7,.38,mat(0x1f4b3b),-.9);
+const rim=slab(10.6,8.1,.25,.23,gold,-.33);
+slab(10.27,7.77,.16,.12,dark,-.17);
+const W=10,H=7.5;
+const picture=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=imageURL;});
+const art=document.createElement('canvas');art.width=1440;art.height=1080;art.getContext('2d').drawImage(picture,0,0,1440,1080);
+const texture=new THREE.CanvasTexture(art);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=renderer.capabilities.getMaxAnisotropy();
+const surface=new THREE.MeshStandardMaterial({map:texture,roughness:.55,metalness:.02});
+const ghost=mesh(new THREE.PlaneGeometry(W,H),new THREE.MeshBasicMaterial({map:texture,transparent:true,opacity:.13,depthWrite:false}),scene,0,0,.075);ghost.visible=false;ghost.castShadow=false;
+// A miniature sculpted Manuelita watches over the puzzle, with a Paris landmark.
+const mascot=new THREE.Group();scene.add(mascot);mascot.position.set(7,4.6,.05);mascot.rotation.z=-.28;
+const skin=mat(0xb6ce79),shell=mat(0x548442),pink=mat(0xe7a3a0),black=mat(0x1c3329),white=mat(0xfff6d9);
+for(const x of [-.62,.62]) for(const y of [-.55,.55])ball(mascot,x,y,.24,.28,.34,.21,skin);
+ball(mascot,0,0,.55,.95,1.1,.69,shell);
+for(let i=0;i<6;i++){const a=i*Math.PI/3;ball(mascot,Math.cos(a)*.51,Math.sin(a)*.6,.99,.27,.29,.16,green);}ball(mascot,0,0,1.18,.31,.35,.13,green);
+ball(mascot,0,1.05,.52,.49,.49,.44,skin);
+for(const x of [-.22,.22]){ball(mascot,x,1.31,.79,.13,.13,.09,white);ball(mascot,x,1.37,.84,.063,.064,.044,black);ball(mascot,x-.017,1.385,.881,.018,.021,.009,white);}
+ball(mascot,0,1.04,1.02,.65,.42,.065,pink);ball(mascot,0,.98,1.18,.36,.29,.2,pink);
+for(let i=0;i<5;i++){const a=i*Math.PI*2/5;ball(mascot,.25+Math.cos(a)*.11,1.08+Math.sin(a)*.1,1.34,.09,.09,.04,cream);}ball(mascot,.25,1.08,1.38,.055,.055,.03,gold);
+const tower=new THREE.Group();scene.add(tower);tower.position.set(-7.1,4.8,-.35);
+function rod(parent,a,b,r,material){const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...b),v=bv.clone().sub(av);const o=mesh(new THREE.CylinderGeometry(r,r,v.length(),8),material,parent);o.position.copy(av.add(bv).multiplyScalar(.5));o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());return o;}
+for(const x of [-1,1])for(const y of [-1,1]){rod(tower,[x*.65,y*.5,0],[x*.09,y*.08,2.65],.07,gold);rod(tower,[x*.65,y*.5,0],[-x*.2,y*.16,1.8],.025,gold);}
+box(tower,0,0,.9,1.05,.85,.1,gold);box(tower,0,0,1.8,.55,.46,.08,gold);rod(tower,[0,0,2.6],[0,0,3.25],.025,gold);
+// Small leaves and polished pebbles give the table a handcrafted diorama feel.
+const leaves=new THREE.Group();scene.add(leaves);
+for(let i=0;i<10;i++){const side=i%2?1:-1,x=side*(9.5+Math.sin(i)*.4),y=-5.6+(i%3)*.16;const leaf=ball(leaves,x,y,-.28,.15,.48,.07,mat(i%3?0x628f55:0xc1aa62));leaf.rotation.z=side*.7+i;}
+const ray=new THREE.Raycaster(),pointer=new THREE.Vector2(),plane=new THREE.Plane(new THREE.Vector3(0,0,1),-.28);
+let pieces=[],outlines=[],drag=null,dragStart=null,dragOffset=new THREE.Vector3(),pointerID=null,cols=4,rows=3,pw,ph,moves=0,placed=0,hints=3,started=0,elapsedMs=0,lastTick=performance.now(),finished=false,guide=false,topView=false,mobile=false,paused=false,selectedIndex=-1,pendingLevel=null;
+let effects=[],audio=null,sound=false,toastTimer,modalFocus=null;const mode=()=>$('level').value;
+const fmt=ms=>{const n=Math.floor(ms/1000);return Math.floor(n/60)+':'+String(n%60).padStart(2,'0');};
+function toast(text){$('toast').textContent=text;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),2800);}
+function note(freq=600,duration=.13){if(!sound)return;try{audio??=new(window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(freq*1.35,audio.currentTime+duration);g.gain.setValueAtTime(.07,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+duration);}catch{sound=false;syncSound();}}
+function syncSound(){$('sound').setAttribute('aria-pressed',sound);$('sound').title=sound?'Silenciar':'Activar sonido';$('sound').setAttribute('aria-label',$('sound').title);}
+function update(){$('placed').textContent=placed+' / '+pieces.length;$('moves').textContent=moves;$('hints').textContent=hints;$('hint').disabled=hints===0||finished;$('progress').style.width=(placed/pieces.length*100)+'%';$('journeyText').textContent=finished?'¡Manuelita llegó a París!':placed?Math.round(placed/pieces.length*100)+'% del camino recorrido':'Tu aventura está por empezar';}
+function start(){if(!started)started=performance.now();}
+function edge(s,a,b,sign,size){const dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len;const p=(u,v)=>[a[0]+dx*u+uy*v*size*sign,a[1]+dy*u-ux*v*size*sign];if(!sign){s.lineTo(...b);return;}s.lineTo(...p(.34,0));s.bezierCurveTo(...p(.43,0),...p(.34,.23),...p(.5,.23));s.bezierCurveTo(...p(.66,.23),...p(.57,0),...p(.66,0));s.lineTo(...b);}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function disposeObject(o){scene.remove(o);o.geometry?.dispose();if(o.userData.ownMaterial)o.material.dispose();}
+function newGame(){cancelDrag();for(const p of pieces)disposeObject(p);for(const p of outlines)disposeObject(p);pieces=[];outlines=[];for(const e of effects)disposeObject(e.mesh);effects=[];[cols,rows]=mode().split('x').map(Number);pw=W/cols;ph=H/rows;moves=0;placed=0;hints=3;elapsedMs=0;started=0;finished=false;selectedIndex=-1;lastTick=performance.now();$('time').textContent='0:00';hideModal();
+const h=Array.from({length:rows-1},()=>Array.from({length:cols},()=>Math.random()<.5?1:-1)),v=Array.from({length:rows},()=>Array.from({length:cols-1},()=>Math.random()<.5?1:-1));
+for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const s=new THREE.Shape();s.moveTo(-pw/2,-ph/2);const signs=[r===rows-1?0:h[r][c],c===cols-1?0:v[r][c],r===0?0:-h[r-1][c],c===0?0:-v[r][c-1]];const corners=[[-pw/2,-ph/2],[pw/2,-ph/2],[pw/2,ph/2],[-pw/2,ph/2]];for(let k=0;k<4;k++)edge(s,corners[k],corners[(k+1)%4],signs[k],Math.min(pw,ph));s.closePath();
+const geo=new THREE.ExtrudeGeometry(s,{depth:.16,bevelEnabled:true,bevelSize:.018,bevelThickness:.025,bevelSegments:2,curveSegments:14,steps:1});const uv=geo.attributes.uv,pos=geo.attributes.position;const hx=-W/2+(c+.5)*pw,hy=H/2-(r+.5)*ph;for(let i=0;i<pos.count;i++)uv.setXY(i,(pos.getX(i)+hx+W/2)/W,(pos.getY(i)+hy+H/2)/H);
+const piece=mesh(geo,[surface,gold]);piece.userData={home:new THREE.Vector3(hx,hy,.13),placed:false,slot:null,id:r*cols+c};pieces.push(piece);
+const points=s.getPoints(24).map(p=>new THREE.Vector3(p.x+hx,p.y+hy,.09));const line=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:0x96b583,transparent:true,opacity:.16}));line.userData.ownMaterial=true;scene.add(line);outlines.push(line);}
+shuffle(pieces);layoutPieces();update();}
+function layoutPieces(){const available=pieces.filter(p=>!p.userData.placed);let slots=[];if(mobile){const ncols=cols,nrows=Math.ceil(pieces.length/ncols),sx=12/ncols,sy=9.4/nrows;for(let r=0;r<nrows;r++)for(let c=0;c<ncols;c++)slots.push(new THREE.Vector3((c-(ncols-1)/2)*sx,-5.45-r*sy,.16));}else{const nrows=Math.ceil(pieces.length/4),sy=10.2/nrows,sx=2.75;for(let side of [-1,1])for(let r=0;r<nrows;r++)for(let c=0;c<2;c++)slots.push(new THREE.Vector3(side*(6.8+c*sx),4.5-r*sy,.16));}available.forEach((p,i)=>{p.position.copy(slots[i]);p.rotation.set(0,0,(Math.random()-.5)*.1);p.userData.slot=p.position.clone();});}
+function resize(){cancelDrag();const rect=stage.getBoundingClientRect();const was=mobile;mobile=rect.width<700;renderer.setSize(rect.width,Math.max(rect.height,1));camera.aspect=rect.width/Math.max(rect.height,1);camera.updateProjectionMatrix();table.scale.set(mobile?.68:1,mobile?1.8:1,1);table.position.y=mobile?-4.7:0;mascot.position.set(mobile?4.2:3.9,5.3,.05);mascot.scale.setScalar(mobile?.62:.76);mascot.rotation.z=Math.PI-.28;tower.position.set(-4.1,4.8,-.35);tower.scale.setScalar(mobile?.65:.82);leaves.visible=!mobile;if(was!==mobile&&pieces.length)layoutPieces();setCamera();}
+function setCamera(){const width=mobile?14.2:24.6,height=mobile?23:14.4;const needed=Math.max(height,width/camera.aspect);const dist=needed/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));target.set(0,mobile?-4.25:0,0);const angle=topView?0:.30;camera.position.set(0,target.y-Math.sin(angle)*dist,Math.cos(angle)*dist);camera.lookAt(target);camera.updateMatrixWorld();}
+new ResizeObserver(resize).observe(stage);resize();newGame();
+function point(e){const r=canvas.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(pointer,camera);const p=new THREE.Vector3();return ray.ray.intersectPlane(plane,p);}
+function begin(p){drag=p;dragStart=p.position.clone();p.position.z=.6;canvas.style.cursor='grabbing';start();}
+function clampDrag(p){p.x=THREE.MathUtils.clamp(p.x,mobile?-6.4:-11,mobile?6.4:11);p.y=THREE.MathUtils.clamp(p.y,mobile?-14.5:-6.2,6);}
+canvas.addEventListener('pointerdown',e=>{if(finished||paused||drag||e.button!==0)return;const pt=point(e);const hit=ray.intersectObjects(pieces.filter(p=>!p.userData.placed),false)[0];if(!hit||!pt)return;begin(hit.object);dragOffset.copy(drag.position).sub(pt);pointerID=e.pointerId;canvas.setPointerCapture(pointerID);canvas.focus();note(290,.07);});
+canvas.addEventListener('pointermove',e=>{const pt=point(e);if(drag&&pointerID===e.pointerId&&pt){drag.position.x=pt.x+dragOffset.x;drag.position.y=pt.y+dragOffset.y;clampDrag(drag.position);drag.rotation.z*=.75;return;}if(!drag)canvas.style.cursor=ray.intersectObjects(pieces.filter(p=>!p.userData.placed),false).length?'grab':'default';});
+function releaseCapture(){const id=pointerID;pointerID=null;if(id!==null&&canvas.hasPointerCapture(id))canvas.releasePointerCapture(id);}
+function cancelDrag(){if(drag){drag.position.copy(dragStart);drag=null;}releaseCapture();canvas.style.cursor='default';}
+function drop(){if(!drag)return;const p=drag;drag=null;releaseCapture();moves++;const home=p.userData.home,dist=Math.hypot(p.position.x-home.x,p.position.y-home.y);if(dist<Math.min(pw,ph)*.36){place(p);}else{p.position.z=.16;note(190,.055);}canvas.style.cursor='grab';update();}
+canvas.addEventListener('pointerup',e=>{if(e.pointerId===pointerID)drop();});canvas.addEventListener('pointercancel',cancelDrag);canvas.addEventListener('lostpointercapture',()=>{if(pointerID!==null)cancelDrag();});window.addEventListener('blur',cancelDrag);
+function burst(position,big=false){if(reduced)return;const count=big?85:12;for(let i=0;i<count;i++){const m=mesh(new THREE.OctahedronGeometry(big?.09:.045),mat([0xffce73,0xc7eca1,0xe5a3a0,0xffffff][i%4]),scene,...position.toArray());m.userData.ownMaterial=true;m.castShadow=false;effects.push({mesh:m,velocity:new THREE.Vector3((Math.random()-.5)*(big?8:2),(Math.random()-.5)*(big?8:2),2+Math.random()*4),life:big?3:1});}}
+function place(p){p.position.copy(p.userData.home);p.rotation.set(0,0,0);p.userData.placed=true;placed++;burst(p.position);note(420+placed/pieces.length*650);if(placed===pieces.length)win();else if(placed===1)toast('¡Eso! Cada pieza te acerca un poquito más.');update();}
+function win(){finished=true;burst(new THREE.Vector3(0,0,2),true);$('winTime').textContent=fmt(elapsedMs);$('winMoves').textContent=moves;let bestText='¡Una postal y un recuerdo para guardar!';if(hints===3){try{const key='manuelita-3d-best-'+mode(),old=Number(localStorage.getItem(key));if(!old||elapsedMs<old){localStorage.setItem(key,String(Math.max(1,elapsedMs)));bestText='✦ Tu mejor tiempo sin pistas en este nivel';}else bestText='Tu mejor viaje sin pistas: '+fmt(old);}catch{}}else bestText='Usaste '+(3-hints)+' pista'+(hints===2?'':'s')+'. ¡Lo importante es llegar!';$('best').textContent=bestText;setTimeout(()=>{if(finished){showModal('winModal');note(1100,.3);}},reduced?0:700);}
+canvas.addEventListener('keydown',e=>{if(paused||finished)return;if(['Enter',' ','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Escape'].includes(e.key))e.preventDefault();if(e.key==='Escape'){cancelDrag();return;}if(e.key==='Enter'||e.key===' '){if(drag)drop();else{const free=pieces.filter(p=>!p.userData.placed);selectedIndex=(selectedIndex+1)%free.length;begin(free[selectedIndex]);toast('Pieza seleccionada. Flechas para mover; Enter para soltar.');}}if(drag&&e.key.startsWith('Arrow')){const step=Math.min(pw,ph)*(e.shiftKey?.03:.15);if(e.key==='ArrowLeft')drag.position.x-=step;if(e.key==='ArrowRight')drag.position.x+=step;if(e.key==='ArrowUp')drag.position.y+=step;if(e.key==='ArrowDown')drag.position.y-=step;clampDrag(drag.position);}});
+function showModal(id){cancelDrag();modalFocus=document.activeElement;document.querySelectorAll('.veil:not(#loading)').forEach(el=>el.hidden=el.id!==id);paused=true;$(id).querySelector('button')?.focus();}
+function hideModal(){document.querySelectorAll('.veil:not(#loading)').forEach(el=>el.hidden=true);paused=false;lastTick=performance.now();modalFocus?.focus();}
+document.addEventListener('keydown',e=>{const modal=document.querySelector('.veil:not([hidden])');if(!modal||modal.id==='loading')return;if(e.key==='Escape'){if(modal.id==='restartModal')cancelRestart();else hideModal();}if(e.key==='Tab'){const buttons=[...modal.querySelectorAll('button:not([disabled])')],first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
+$('guide').onclick=()=>{guide=!guide;ghost.visible=guide;ghost.material.opacity=.38;$('guide').setAttribute('aria-pressed',guide);toast(guide?'La postal te muestra el camino.':'Guía oculta. ¡Vos podés!');};
+$('hint').onclick=()=>{if(hints<=0||finished)return;cancelDrag();start();hints--;moves++;place(pieces.find(p=>!p.userData.placed));toast('Una ayudita de Manuelita ✦');update();};
+$('view').onclick=()=>{cancelDrag();topView=!topView;$('view').setAttribute('aria-pressed',topView);$('view').textContent=topView?'◇ Vista 3D':'◇ Vista cenital';setCamera();};
+$('sound').onclick=()=>{sound=!sound;syncSound();note();};$('help').onclick=()=>showModal('helpModal');$('closeHelp').onclick=hideModal;
+let currentLevel=mode();function requestNew(value){pendingLevel=value;if(moves>0&&!finished)showModal('restartModal');else confirmRestart();}function confirmRestart(){if(pendingLevel)$('level').value=pendingLevel;currentLevel=mode();pendingLevel=null;newGame();toast('Nuevo viaje, nuevas posibilidades.');}function cancelRestart(){$('level').value=currentLevel;pendingLevel=null;hideModal();}
+$('restart').onclick=()=>requestNew(mode());$('level').onchange=()=>requestNew(mode());$('confirmRestart').onclick=confirmRestart;$('cancelRestart').onclick=cancelRestart;$('again').onclick=()=>requestNew(mode());$('admire').onclick=hideModal;
+document.addEventListener('visibilitychange',()=>{lastTick=performance.now();if(document.hidden)cancelDrag();});
+let prev=performance.now();function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-prev)/1000,.05);prev=now;if(started&&!finished&&!paused&&!document.hidden)elapsedMs+=Math.min(now-lastTick,250);lastTick=now;$('time').textContent=fmt(elapsedMs);if(!reduced){mascot.rotation.z=Math.PI-.28+Math.sin(now*.0008)*.035;mascot.position.z=.05+Math.sin(now*.0015)*.035;if(drag)drag.position.z=.6+Math.sin(now*.008)*.035;}for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.life-=dt;e.velocity.z-=dt*3;e.mesh.position.addScaledVector(e.velocity,dt);e.mesh.rotation.x+=dt*2;e.mesh.rotation.y+=dt*3;e.mesh.scale.setScalar(Math.min(1,Math.max(0,e.life)));if(e.life<=0){disposeObject(e.mesh);effects.splice(i,1);}}renderer.render(scene,camera);}requestAnimationFrame(animate);$('loading').hidden=true;
+// Read-only diagnostics for browser smoke tests; no game actions are exposed.
+Object.defineProperty(window,'manuelitaDebug',{value:()=>({count:pieces.length,placed,moves,hints,finished,paused,mobile,time:elapsedMs,selected:!!drag,pieces:pieces.map(p=>{const project=v=>{const q=v.clone().project(camera),r=canvas.getBoundingClientRect();return{x:r.left+(q.x+1)*r.width/2,y:r.top+(1-q.y)*r.height/2};};return{id:p.userData.id,placed:p.userData.placed,screen:project(p.position.clone().add(new THREE.Vector3(0,0,.2))),home:project(p.userData.home.clone().add(new THREE.Vector3(0,0,.2)))};})})});
 }
-
-// Forma de la pestaña del borde, en coordenadas (u a lo largo, v hacia afuera).
-function edgeTo(path, x0, y0, x1, y1, sign, size) {
-  if (sign === 0) { path.lineTo(x1, y1); return; }
-  const dx = x1 - x0, dy = y1 - y0;
-  const len = Math.hypot(dx, dy);
-  const ux = dx / len, uy = dy / len;
-  const nx = uy, ny = -ux; // normal hacia afuera (recorrido horario, eje y hacia abajo)
-  const P = (u, v) => [x0 + ux * u * len + nx * v * size * sign, y0 + uy * u * len + ny * v * size * sign];
-  path.lineTo(...P(0.36, 0));
-  path.bezierCurveTo(...P(0.44, 0), ...P(0.34, 0.24), ...P(0.5, 0.24));
-  path.bezierCurveTo(...P(0.66, 0.24), ...P(0.56, 0), ...P(0.64, 0));
-  path.lineTo(x1, y1);
-}
-
-function buildPieces() {
-  pw = BOARD_W / cols; ph = BOARD_H / rows;
-  const tab = Math.min(pw, ph);
-  const margin = Math.ceil(tab * 0.3);
-  const rnd = () => (Math.random() < 0.5 ? 1 : -1);
-  const hEdge = [...Array(rows - 1)].map(() => [...Array(cols)].map(rnd));
-  const vEdge = [...Array(rows)].map(() => [...Array(cols - 1)].map(rnd));
-
-  pieces = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const x = c * pw, y = r * ph;
-      const top = r === 0 ? 0 : -hEdge[r - 1][c];
-      const right = c === cols - 1 ? 0 : vEdge[r][c];
-      const bottom = r === rows - 1 ? 0 : hEdge[r][c];
-      const left = c === 0 ? 0 : -vEdge[r][c - 1];
-
-      // camino en coordenadas locales de la pieza (origen = esquina sup-izq sin márgenes)
-      const path = new Path2D();
-      path.moveTo(0, 0);
-      edgeTo(path, 0, 0, pw, 0, top, tab);
-      edgeTo(path, pw, 0, pw, ph, right, tab);
-      edgeTo(path, pw, ph, 0, ph, bottom, tab);
-      edgeTo(path, 0, ph, 0, 0, left, tab);
-      path.closePath();
-
-      // pre-render de la pieza
-      const pc = document.createElement('canvas');
-      pc.width = Math.ceil(pw + margin * 2);
-      pc.height = Math.ceil(ph + margin * 2);
-      const g = pc.getContext('2d');
-      g.translate(margin, margin);
-      g.save();
-      g.clip(path);
-      g.drawImage(img, -x, -y);
-      g.restore();
-      g.lineWidth = 2;
-      g.strokeStyle = 'rgba(255,255,255,.7)';
-      g.stroke(path);
-      g.lineWidth = 1;
-      g.strokeStyle = 'rgba(0,0,0,.35)';
-      g.stroke(path);
-
-      pieces.push({ r, c, homeX: BX + x, homeY: BY + y, x: 0, y: 0, path, canvas: pc, margin, placed: false });
-    }
-  }
-}
-
-function scatter() {
-  // casilleros libres alrededor del tablero; si no alcanzan, se permiten encima
-  const sp = Math.min(pw, ph) * 0.3;
-  const stepX = pw + sp, stepY = ph + sp;
-  const free = [], over = [];
-  for (let y = sp; y + ph + sp <= CH; y += stepY) {
-    for (let x = sp; x + pw + sp <= CW; x += stepX) {
-      const overlaps = x + pw > BX - sp && x < BX + BOARD_W + sp && y + ph > BY - sp && y < BY + BOARD_H + sp;
-      (overlaps ? over : free).push([x, y]);
-    }
-  }
-  const shuffle = a => a.sort(() => Math.random() - 0.5);
-  const slots = shuffle(free).concat(shuffle(over));
-  const jitter = () => (Math.random() - 0.5) * sp;
-  pieces.forEach((p, i) => {
-    p.placed = false;
-    const [x, y] = slots[i % slots.length];
-    p.x = Math.max(0, Math.min(CW - pw, x + jitter()));
-    p.y = Math.max(0, Math.min(CH - ph, y + jitter()));
-  });
-  shuffle(pieces);
-}
-
-function draw() {
-  ctx.clearRect(0, 0, CW, CH);
-
-  // tablero
-  ctx.fillStyle = '#f7f0da';
-  ctx.strokeStyle = '#cbbd92';
-  ctx.lineWidth = 3;
-  ctx.fillRect(BX, BY, BOARD_W, BOARD_H);
-  ctx.strokeRect(BX - 1.5, BY - 1.5, BOARD_W + 3, BOARD_H + 3);
-  if (showGhost) {
-    ctx.globalAlpha = 0.3;
-    ctx.drawImage(img, BX, BY);
-    ctx.globalAlpha = 1;
-  }
-
-  for (const p of pieces) {
-    const lifted = p === dragging;
-    if (lifted) {
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,.35)';
-      ctx.shadowBlur = 16;
-      ctx.shadowOffsetY = 6;
-    } else if (!p.placed) {
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,.25)';
-      ctx.shadowBlur = 5;
-      ctx.shadowOffsetY = 2;
-    }
-    ctx.drawImage(p.canvas, p.x - p.margin, p.y - p.margin);
-    if (lifted || !p.placed) ctx.restore();
-  }
-}
-
-// ---------- Interacción ----------
-function toCanvas(e) {
-  const rect = canvas.getBoundingClientRect();
-  return [(e.clientX - rect.left) * CW / rect.width, (e.clientY - rect.top) * CH / rect.height];
-}
-
-function pieceAt(x, y) {
-  for (let i = pieces.length - 1; i >= 0; i--) {
-    const p = pieces[i];
-    if (p.placed) continue;
-    if (ctx.isPointInPath(p.path, x - p.x, y - p.y)) return i;
-  }
-  return -1;
-}
-
-canvas.addEventListener('pointerdown', e => {
-  if (finished) return;
-  const [x, y] = toCanvas(e);
-  const i = pieceAt(x, y);
-  if (i < 0) return;
-  const p = pieces.splice(i, 1)[0];
-  pieces.push(p);
-  dragging = p;
-  dragDX = x - p.x; dragDY = y - p.y;
-  canvas.setPointerCapture(e.pointerId);
-  if (!timerId) startTimer();
-  draw();
-});
-
-canvas.addEventListener('pointermove', e => {
-  const [x, y] = toCanvas(e);
-  if (!dragging) {
-    canvas.style.cursor = pieceAt(x, y) >= 0 ? 'grab' : 'default';
-    return;
-  }
-  canvas.style.cursor = 'grabbing';
-  dragging.x = Math.max(-pw / 2, Math.min(CW - pw / 2, x - dragDX));
-  dragging.y = Math.max(-ph / 2, Math.min(CH - ph / 2, y - dragDY));
-  draw();
-});
-
-function drop() {
-  if (!dragging) return;
-  const p = dragging;
-  dragging = null;
-  moves++;
-  const snap = Math.min(pw, ph) * 0.25;
-  if (Math.hypot(p.x - p.homeX, p.y - p.homeY) < snap) {
-    p.x = p.homeX; p.y = p.homeY; p.placed = true;
-    // las piezas colocadas van al fondo
-    pieces.splice(pieces.indexOf(p), 1);
-    pieces.unshift(p);
-  }
-  updateStats();
-  draw();
-  if (pieces.every(q => q.placed)) win();
-}
-canvas.addEventListener('pointerup', drop);
-canvas.addEventListener('pointercancel', drop);
-
-// ---------- Tiempo, estadísticas y victoria ----------
-function fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
-function elapsed() { return Math.floor((Date.now() - startTime) / 1000); }
-function startTimer() {
-  startTime = Date.now();
-  timerId = setInterval(() => { $('time').textContent = fmt(elapsed()); }, 500);
-}
-function stopTimer() { clearInterval(timerId); timerId = null; }
-
-function updateStats() {
-  $('moves').textContent = moves;
-  $('placed').textContent = pieces.filter(p => p.placed).length;
-  $('total').textContent = pieces.length;
-}
-
-function win() {
-  finished = true;
-  const secs = elapsed();
-  stopTimer();
-  $('time').textContent = fmt(secs);
-  $('winText').textContent = `Armaste ${pieces.length} piezas en ${fmt(secs)} con ${moves} movimientos.`;
-  $('win').classList.add('show');
-}
-
-function newGame() {
-  const [c, r] = $('level').value.split('x').map(Number);
-  cols = c; rows = r;
-  stopTimer();
-  $('time').textContent = '0:00';
-  moves = 0; finished = false; dragging = null;
-  $('win').classList.remove('show');
-  buildPieces();
-  scatter();
-  updateStats();
-  draw();
-}
-
-$('shuffle').addEventListener('click', newGame);
-$('again').addEventListener('click', newGame);
-$('level').addEventListener('change', newGame);
-$('ghost').addEventListener('click', () => {
-  showGhost = !showGhost;
-  $('ghost').textContent = showGhost ? 'Ocultar guía' : 'Ver guía';
-  draw();
-});
-
-loadImage().then(i => { img = i; newGame(); });
 </script>
 </body>
 </html>
