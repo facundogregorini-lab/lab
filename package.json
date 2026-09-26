@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "description": "De Pehuajó a París: rompecabezas 3D de Manuelita",
-  "scripts": { "test": "node tests/smoke.cjs", "dev": "node tests/server.cjs" },
-  "devDependencies": { "playwright": "1.62.1" }
+  "scripts": {
+    "test": "node tests/smoke.cjs",
+    "dev": "node tests/server.cjs"
+  },
+  "dependencies": {
+    "redis": "^4.7.1"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
 }

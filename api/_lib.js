@@ -14,6 +14,32 @@ function dbConfig() {
   return null;
 }
 
+// Plain Redis connection string (Redis Cloud / "Redis" on the Vercel Marketplace sets REDIS_URL).
+function tcpUrl() {
+  const key = Object.keys(process.env).find(k => /(^|_)(REDIS_URL|KV_URL)$/.test(k) && /^rediss?:\/\//.test(process.env[k]));
+  return key ? process.env[key] : null;
+}
+
+let tcpClient = null;
+function tcp(url) {
+  tcpClient ??= (async () => {
+    const { createClient } = require('redis');
+    const client = createClient({ url });
+    client.on('error', error => console.error('Redis:', error.message));
+    await client.connect();
+    client.unref(); // don't keep a local process alive just for this connection
+    return client;
+  })().catch(error => { tcpClient = null; throw error; });
+  return tcpClient;
+}
+
+function missingDbMessage() {
+  const found = Object.keys(process.env).filter(k => /REDIS|KV_|UPSTASH/.test(k));
+  return 'Falta conectar la base de datos en Vercel. ' + (found.length
+    ? 'Variables encontradas: ' + found.join(', ') + '.'
+    : 'No hay ninguna variable de Redis/Upstash en este proyecto: conectá la base y hacé Redeploy.');
+}
+
 // In-memory store, only for local development and tests (MANUELITA_MEMORY_DB=1).
 const memory = new Map();
 function memoryCommand([cmd, key, ...args]) {
@@ -41,7 +67,9 @@ async function redis(...command) {
   const config = dbConfig();
   if (!config) {
     if (process.env.MANUELITA_MEMORY_DB === '1') return memoryCommand(command.map(String));
-    throw new HttpError(503, 'Falta conectar la base de datos (Upstash) en Vercel.');
+    const url = tcpUrl();
+    if (url) return (await tcp(url)).sendCommand(command.map(String));
+    throw new HttpError(503, missingDbMessage());
   }
   const response = await fetch(config.url, {
     method: 'POST',

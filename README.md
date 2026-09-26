@@ -27,10 +27,10 @@ El servidor son dos funciones de Vercel en `api/` (`auth.js` y `data.js`) y los 
 ### Configurar la base de datos en Vercel
 
 1. En el proyecto de Vercel, abrí **Storage → Create Database** (o **Marketplace**) y elegí **Upstash for Redis** (plan gratuito).
-2. Conectala al proyecto. Vercel agrega solo las variables `KV_REST_API_URL` y `KV_REST_API_TOKEN` (también sirven `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`).
+2. Conectala al proyecto. Vercel agrega solo las variables `KV_REST_API_URL` y `KV_REST_API_TOKEN` (también sirven `UPSTASH_REDIS_REST_URL`/`_TOKEN`, esos nombres con prefijo, o un `REDIS_URL` de cualquier Redis, como el de Redis Cloud).
 3. Volvé a desplegar (**Deployments → Redeploy**) para que las funciones tomen las variables.
 
-Si falta la base, el juego sigue andando sin cuenta y el formulario avisa que falta conectarla.
+Si falta la base, el juego sigue andando sin cuenta y el formulario avisa que falta conectarla, con la lista de variables de Redis que ve el proyecto (solo los nombres).
 
 Para probar localmente sin Vercel: `npm run dev` levanta el sitio y la API en http://127.0.0.1:3000 con una base en memoria.
 
