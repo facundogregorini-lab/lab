@@ -2,10 +2,16 @@
 const crypto = require('node:crypto');
 
 // Upstash Redis over its REST API. The Vercel ↔ Upstash integration sets either the KV_* or the UPSTASH_* names.
+// Names may carry a custom prefix chosen when connecting the store (e.g. STORAGE_KV_REST_API_URL).
 function dbConfig() {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  return url && token ? { url, token } : null;
+  for (const suffix of ['KV_REST_API', 'UPSTASH_REDIS_REST']) {
+    const urlKey = Object.keys(process.env).find(k => k.endsWith(suffix + '_URL'));
+    if (!urlKey) continue;
+    const url = process.env[urlKey];
+    const token = process.env[urlKey.slice(0, -'_URL'.length) + '_TOKEN'];
+    if (url && token) return { url, token };
+  }
+  return null;
 }
 
 // In-memory store, only for local development and tests (MANUELITA_MEMORY_DB=1).
