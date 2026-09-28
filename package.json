@@ -4,7 +4,7 @@
   "private": true,
   "description": "De Pehuajó a París: rompecabezas 3D de Manuelita",
   "scripts": {
-    "test": "node tests/smoke.cjs",
+    "test": "node tests/smoke.cjs && node tests/billing.cjs",
     "dev": "node tests/server.cjs"
   },
   "dependencies": {

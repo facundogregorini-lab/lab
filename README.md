@@ -34,6 +34,26 @@ Si falta la base, el juego sigue andando sin cuenta y el formulario avisa que fa
 
 Para probar localmente sin Vercel: `npm run dev` levanta el sitio y la API en http://127.0.0.1:3000 con una base en memoria.
 
+## Plan Ilimitado (freemium)
+
+- **Gratis:** 1 rompecabezas nuevo por día (hora de Argentina), con o sin cuenta. Una partida cuenta desde el primer movimiento; retomar una guardada no cuenta.
+- **Ilimitado (US$ 5 por mes):** rompecabezas sin límite y fotos propias. Se paga con **Mercado Pago Suscripciones**, que cobra solo cada mes; se cancela desde Mercado Pago y el acceso sigue hasta el fin del período pago.
+
+Mientras no estén configuradas las variables de Mercado Pago, el juego no tiene límites. El límite corre en el navegador, así que alguien con conocimientos técnicos podría saltearlo; el servidor sí bloquea las fotos propias y lleva la cuenta diaria de los usuarios registrados.
+
+### Configurar Mercado Pago en Vercel
+
+1. En [Mercado Pago Developers](https://www.mercadopago.com.ar/developers/panel/app) creá una aplicación (producto: *Suscripciones*) y copiá el **Access Token de producción**. Para probar sin cobrar, usá primero el de prueba con [usuarios de prueba](https://www.mercadopago.com.ar/developers/es/docs/your-integrations/test/accounts).
+2. En Vercel → **Settings → Environment Variables** agregá:
+   - `MP_ACCESS_TOKEN`: el Access Token.
+   - `MP_PRICE`: el monto mensual **en pesos** (Mercado Pago Argentina cobra suscripciones solo en ARS), por ejemplo el equivalente de US$ 5. Actualizalo cuando cambie el dólar; aplica a las suscripciones nuevas.
+   - `PRICE_LABEL` (opcional): el texto del precio en pantalla. Por defecto, `US$ 5 por mes`.
+   - `MANUELITA_PREMIUM_USERS` (opcional): usuarios con el plan gratis de cortesía, separados por comas (por ejemplo, el tuyo).
+3. En la aplicación de Mercado Pago, en **Webhooks**, cargá la URL `https://TU-DOMINIO/api/mercadopago` y marcá el evento **Planes y suscripciones**. Así se registran las renovaciones y cancelaciones. Sin el webhook igual funciona: el plan se revisa al volver del pago y cuando está por vencer.
+4. **Redeploy.**
+
+Para cobrar de forma comercial, Vercel exige el plan **Pro** (el plan Hobby es solo para uso personal) y en Argentina corresponde estar inscripto en ARCA y facturar.
+
 ## Accesibilidad
 
 Los controles pueden usarse con Tab. Con foco en la mesa, Enter selecciona la siguiente pieza disponible, las flechas la mueven (Shift permite ajustar en pasos pequeños), Enter la suelta y Escape cancela. Los diálogos retienen el foco y se cierran con Escape. Se respeta `prefers-reduced-motion`.

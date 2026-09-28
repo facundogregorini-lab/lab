@@ -1,6 +1,7 @@
 // Saved puzzles for the logged-in user.
 // GET: { game, photo, done } · POST { type: 'progress' | 'photo' | 'finish', ... }
 const { redis, HttpError, requireUser, body, handler } = require('./_lib');
+const { isPremium } = require('./_billing');
 
 const MAX_GAME = 20_000, MAX_PHOTO = 900_000, MAX_THUMB = 60_000, MAX_DONE = 30;
 const isJpeg = s => typeof s === 'string' && s.startsWith('data:image/jpeg;base64,');
@@ -14,7 +15,9 @@ module.exports = handler(async req => {
       redis('GET', 'photo:' + name),
       redis('LRANGE', 'done:' + name, 0, MAX_DONE - 1),
     ]);
-    return { game: game ? JSON.parse(game) : null, photo: photo || null, done: (done || []).map(d => JSON.parse(d)) };
+    // Own photos are part of the paid plan.
+    const premium = photo ? await isPremium(name) : false;
+    return { game: game ? JSON.parse(game) : null, photo: premium ? photo : null, done: (done || []).map(d => JSON.parse(d)) };
   }
   if (req.method !== 'POST') throw new HttpError(405, 'Método no permitido.');
   const data = body(req);
@@ -29,6 +32,7 @@ module.exports = handler(async req => {
 
   if (data.type === 'photo') {
     if (data.photo === null) { await redis('DEL', 'photo:' + name); return { ok: true }; }
+    if (!await isPremium(name)) throw new HttpError(402, 'Las fotos propias son parte del plan Ilimitado.');
     if (!isJpeg(data.photo) || data.photo.length > MAX_PHOTO) throw new HttpError(413, 'La foto es demasiado grande.');
     await redis('SET', 'photo:' + name, data.photo);
     return { ok: true };
