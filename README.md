@@ -58,7 +58,22 @@ Para cobrar de forma comercial, Vercel exige el plan **Pro** (el plan Hobby es s
 
 Los controles pueden usarse con Tab. Con foco en la mesa, Enter selecciona la siguiente pieza disponible, las flechas la mueven (Shift permite ajustar en pasos pequeños), Enter la suelta y Escape cancela. Los diálogos retienen el foco y se cierran con Escape. Se respeta `prefers-reduced-motion`.
 
-Sin cuenta, los mejores tiempos y la foto elegida se guardan únicamente en `localStorage` del navegador. Con cuenta, la partida, la foto y los terminados se guardan en tu base de Upstash. No hay analítica. Las conexiones externas se limitan al motor 3D, las fuentes y la API propia del juego.
+Sin cuenta, los mejores tiempos y la foto elegida se guardan únicamente en `localStorage` del navegador. Con cuenta, la partida, la foto y los terminados se guardan en tu base de Upstash. Las conexiones externas se limitan al motor 3D, las fuentes, la API propia del juego y PostHog (analítica, ver abajo).
+
+## Analítica (PostHog)
+
+El sitio usa [PostHog](https://us.posthog.com) para medir cómo se juega y cómo convierte el plan Ilimitado: pageviews, grabaciones de sesión (las contraseñas se ocultan) y estos eventos:
+
+| Evento | Cuándo |
+|---|---|
+| `puzzle_started` | primera interacción de una partida (`resumed` si se retoma una guardada) |
+| `puzzle_completed` | rompecabezas terminado (`seconds`, `moves`, `hints_used`) |
+| `hint_used`, `puzzle_restarted`, `photo_uploaded` | pistas, partidas nuevas y fotos propias |
+| `signed_up`, `logged_in`, `logged_out` | cuentas; al entrar se identifica a la persona por su usuario |
+| `plan_modal_opened` (`reason`: `limit`, `photo`, `upgrade`), `plan_cta_clicked`, `checkout_started`, `checkout_returned` | embudo del plan |
+| `subscription_authorized`, `subscription_pending`, `subscription_cancelled`, … | cambios de estado confirmados por Mercado Pago (desde el servidor) |
+
+Todos los eventos del navegador llevan `level`, `pieces`, `custom_photo`, `logged_in` y `premium`. En `localhost`/`127.0.0.1` no se envía nada, así que las pruebas y el desarrollo local no ensucian los datos. Del lado del servidor solo se envían eventos en producción de Vercel (o si se define `POSTHOG_KEY`; `POSTHOG_HOST` cambia la región).
 
 ## Publicación
 

@@ -1,5 +1,6 @@
 // Freemium rules and Mercado Pago subscriptions (preapproval API).
 const { redis, HttpError } = require('./_lib');
+const { capture } = require('./_analytics');
 
 const DAY_MS = 86400e3, GRACE_MS = 3 * DAY_MS;
 const env = name => (process.env[name] || '').trim();
@@ -53,6 +54,9 @@ async function storeSubscription(pre) {
   if (old && old.id !== pre.id && old.paidUntil > Date.now() && pre.status !== 'authorized') return old;
   const sub = { id: pre.id, status: pre.status, paidUntil, updated: Date.now() };
   await redis('SET', 'sub:' + name, JSON.stringify(sub));
+  if (old?.id !== sub.id || old?.status !== sub.status) {
+    await capture(name, 'subscription_' + sub.status, { subscription_id: sub.id, previous_status: old?.status || null, amount: pre.auto_recurring?.transaction_amount, currency: pre.auto_recurring?.currency_id });
+  }
   return sub;
 }
 
