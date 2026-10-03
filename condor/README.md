@@ -5,7 +5,7 @@ Web de Condor: filmación y fotografía con dron en Vancouver, el Sea-to-Sky, el
 ## Qué tiene
 
 - **Portada con video aéreo y visor de dron**: un loop de ~13 s (montañas sobre un mar de nubes, una cresta nevada y Vancouver desde el aire) con el visor encima: REC, timecode y un altímetro que llega a 120 m (el límite legal en Canadá) al hacer scroll. Debajo hay una ilustración de las Coast Mountains hecha en código, que se ve mientras carga el video, si falla, si la persona pidió "reducir movimiento" o si tiene activado el ahorro de datos.
-- **Dónde volamos**: seis lugares, cada uno con un mapa topográfico animado y una ruta de vuelo. Se reemplazan por material real cuando esté listo (ver abajo).
+- **Dónde volamos**: seis lugares, cada uno con una foto real de la zona que se funde con su mapa topográfico y una ruta de vuelo. Se reemplazan por material propio cuando esté listo (ver abajo).
 - **Qué filmamos**: seis servicios, cada uno con un loop aéreo de fondo (6 s, en loop sin cortes) y una etiqueta tipo visor con el tipo de toma. Los videos cargan y se reproducen solo cuando la tarjeta está en pantalla; con "reducir movimiento" o ahorro de datos se ve una imagen fija. En *Social-first* el clip es vertical, dentro de un celular.
 - Proceso, la historia de la marca (Andes + Canadá) y formulario de contacto.
 - **Inglés y español**: siempre abre en inglés. El botón **ES/EN** cambia el idioma y la elección se recuerda en ese navegador.
@@ -71,6 +71,21 @@ Igual que la portada, sirven para mostrar el estilo, no como trabajo propio. Par
 ffmpeg -ss 2 -t 6 -i toma.mov -vf "scale=-2:540,crop=720:540" -an -c:v libx264 -crf 29 -pix_fmt yuv420p -movflags +faststart svc-realestate.mp4
 ffmpeg -ss 1 -i svc-realestate.mp4 -frames:v 1 -q:v 6 svc-realestate.jpg
 ```
+
+## Fotos de las zonas
+
+Son fotos reales de cada lugar, de Wikimedia Commons, con licencias Creative Commons que permiten uso comercial **citando autor y licencia**. Por eso cada ficha muestra el crédito arriba a la derecha, con link a la foto original. No hay que borrarlo mientras se use la foto. Se descargaron a 960 px y se convirtieron a WebP.
+
+| Zona | Archivo | Foto | Autor | Licencia |
+| --- | --- | --- | --- | --- |
+| Vancouver Harbour | `vancouver.webp` | [Vancouver Skyline - Yaletown (33223495500)](https://commons.wikimedia.org/w/index.php?curid=68516577) | formulanone | CC BY-SA 2.0 |
+| North Shore | `north.webp` | [Grouse Mountain Tram Aerial](https://commons.wikimedia.org/w/index.php?curid=61220862) | Ecoscapes | CC BY-SA 4.0 |
+| Howe Sound | `howe.webp` | [Howe Sound, Squamish](https://commons.wikimedia.org/w/index.php?curid=60358515) | Shafik Diwan | CC BY-SA 4.0 |
+| Squamish | `squamish.webp` | [The Chief, Stawamus Chief Provincial Park](https://commons.wikimedia.org/w/index.php?curid=93606877) | James Abbott | CC BY 2.0 |
+| Fraser Valley | `fraser.webp` | [Cascades near Chilliwack, BC](https://commons.wikimedia.org/w/index.php?curid=125835596) | Murray Foubister | CC BY-SA 2.5 |
+| Sunshine Coast | `sunshine.webp` | [Trips 05 - Sechelt Inlet - 12 (90968066)](https://commons.wikimedia.org/w/index.php?curid=23469801) | McKay Savage | CC BY 2.0 |
+
+Con tomas propias, reemplazá el archivo de `assets/places/` y borrá el `<a class="credit">` de esa ficha. Si le cargás `data-poster` o `data-video` a la ficha, la foto se quita sola.
 
 ## Verlo en local
 
