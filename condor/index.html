@@ -97,6 +97,8 @@
       <ul class="grid work-grid">
         <li class="card place reveal" data-video="" data-poster="">
           <canvas class="topo" data-seed="11" data-hue="night" aria-hidden="true"></canvas>
+          <img class="place-photo" src="assets/places/vancouver.webp" alt="Downtown Vancouver skyline by the water" width="960" height="640" loading="lazy" decoding="async">
+          <a class="credit" href="https://commons.wikimedia.org/w/index.php?curid=68516577" target="_blank" rel="noopener">Photo: formulanone · CC BY-SA 2.0</a>
           <div class="place-info">
             <span class="coord">49.29° N · 123.11° W</span>
             <h3>Vancouver Harbour</h3>
@@ -105,6 +107,8 @@
         </li>
         <li class="card place reveal" data-video="" data-poster="">
           <canvas class="topo" data-seed="23" data-hue="forest" aria-hidden="true"></canvas>
+          <img class="place-photo" src="assets/places/north.webp" alt="Evergreen forest on the North Shore mountains seen from the Grouse Mountain tram" width="960" height="640" loading="lazy" decoding="async">
+          <a class="credit" href="https://commons.wikimedia.org/w/index.php?curid=61220862" target="_blank" rel="noopener">Photo: Ecoscapes · CC BY-SA 4.0</a>
           <div class="place-info">
             <span class="coord">49.37° N · 123.10° W</span>
             <h3>North Shore</h3>
@@ -113,6 +117,8 @@
         </li>
         <li class="card place reveal" data-video="" data-poster="">
           <canvas class="topo" data-seed="5" data-hue="sky" aria-hidden="true"></canvas>
+          <img class="place-photo" src="assets/places/howe.webp" alt="Howe Sound fjord with snowy peaks, seen from above Squamish" width="960" height="640" loading="lazy" decoding="async">
+          <a class="credit" href="https://commons.wikimedia.org/w/index.php?curid=60358515" target="_blank" rel="noopener">Photo: Shafik Diwan · CC BY-SA 4.0</a>
           <div class="place-info">
             <span class="coord">49.50° N · 123.30° W</span>
             <h3>Howe Sound</h3>
@@ -121,6 +127,8 @@
         </li>
         <li class="card place reveal" data-video="" data-poster="">
           <canvas class="topo" data-seed="31" data-hue="granite" aria-hidden="true"></canvas>
+          <img class="place-photo" src="assets/places/squamish.webp" alt="The Stawamus Chief granite wall with low clouds" width="960" height="640" loading="lazy" decoding="async">
+          <a class="credit" href="https://commons.wikimedia.org/w/index.php?curid=93606877" target="_blank" rel="noopener">Photo: James Abbott · CC BY 2.0</a>
           <div class="place-info">
             <span class="coord">49.68° N · 123.14° W</span>
             <h3>Squamish</h3>
@@ -129,6 +137,8 @@
         </li>
         <li class="card place reveal" data-video="" data-poster="">
           <canvas class="topo" data-seed="47" data-hue="gold" aria-hidden="true"></canvas>
+          <img class="place-photo" src="assets/places/fraser.webp" alt="Fields near Chilliwack with the snowy Cascades behind" width="960" height="640" loading="lazy" decoding="async">
+          <a class="credit" href="https://commons.wikimedia.org/w/index.php?curid=125835596" target="_blank" rel="noopener">Photo: Murray Foubister · CC BY-SA 2.5</a>
           <div class="place-info">
             <span class="coord">49.10° N · 122.30° W</span>
             <h3>Fraser Valley</h3>
@@ -137,6 +147,8 @@
         </li>
         <li class="card place reveal" data-video="" data-poster="">
           <canvas class="topo" data-seed="59" data-hue="ocean" aria-hidden="true"></canvas>
+          <img class="place-photo" src="assets/places/sunshine.webp" alt="Small islands in calm water in Sechelt Inlet" width="960" height="640" loading="lazy" decoding="async">
+          <a class="credit" href="https://commons.wikimedia.org/w/index.php?curid=23469801" target="_blank" rel="noopener">Photo: McKay Savage · CC BY 2.0</a>
           <div class="place-info">
             <span class="coord">49.47° N · 123.76° W</span>
             <h3>Sunshine Coast</h3>
@@ -157,34 +169,58 @@
       </header>
       <ul class="grid services">
         <li class="card service reveal">
-          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 28V14l12-9 12 9v14H4z M12 28v-8h8v8"/></svg>
-          <h3 data-i18n="svc.re.t">Real estate &amp; architecture</h3>
-          <p data-i18n="svc.re.d">Listings that show the view, the lot and the neighbourhood, not just the kitchen.</p>
+          <video class="svc-media" data-src="assets/video/svc-realestate.mp4" poster="assets/video/svc-realestate.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>
+          <span class="svc-shot"><i></i><span data-i18n="shot.re">Pull-back reveal</span></span>
+          <div class="svc-body">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 28V14l12-9 12 9v14H4z M12 28v-8h8v8"/></svg>
+            <h3 data-i18n="svc.re.t">Real estate &amp; architecture</h3>
+            <p data-i18n="svc.re.d">Listings that show the view, the lot and the neighbourhood, not just the kitchen.</p>
+          </div>
         </li>
         <li class="card service reveal">
-          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="8" width="20" height="16" rx="2"/><path d="M23 14l6-4v12l-6-4"/></svg>
-          <h3 data-i18n="svc.brand.t">Brand &amp; tourism films</h3>
-          <p data-i18n="svc.brand.d">Opening shots and hero moments for brands, hotels, wineries and destinations.</p>
+          <video class="svc-media" data-src="assets/video/svc-tourism.mp4" poster="assets/video/svc-tourism.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>
+          <span class="svc-shot"><i></i><span data-i18n="shot.brand">Establishing shot</span></span>
+          <div class="svc-body">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="8" width="20" height="16" rx="2"/><path d="M23 14l6-4v12l-6-4"/></svg>
+            <h3 data-i18n="svc.brand.t">Brand &amp; tourism films</h3>
+            <p data-i18n="svc.brand.d">Opening shots and hero moments for brands, hotels, wineries and destinations.</p>
+          </div>
         </li>
         <li class="card service reveal">
-          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27s-11-6.5-11-14a6 6 0 0 1 11-3.3A6 6 0 0 1 27 13c0 7.5-11 14-11 14z"/></svg>
-          <h3 data-i18n="svc.events.t">Weddings &amp; events</h3>
-          <p data-i18n="svc.events.d">The venue, the coastline and everyone together, from an angle no guest can get.</p>
+          <video class="svc-media" data-src="assets/video/svc-events.mp4" poster="assets/video/svc-events.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>
+          <span class="svc-shot"><i></i><span data-i18n="shot.events">Orbit · golden hour</span></span>
+          <div class="svc-body">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27s-11-6.5-11-14a6 6 0 0 1 11-3.3A6 6 0 0 1 27 13c0 7.5-11 14-11 14z"/></svg>
+            <h3 data-i18n="svc.events.t">Weddings &amp; events</h3>
+            <p data-i18n="svc.events.d">The venue, the coastline and everyone together, from an angle no guest can get.</p>
+          </div>
         </li>
         <li class="card service reveal">
-          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 28h24 M7 28V12h8v16 M15 18h10v10 M7 12l4-6 4 6 M19 22h2"/></svg>
-          <h3 data-i18n="svc.build.t">Construction &amp; progress</h3>
-          <p data-i18n="svc.build.d">Repeatable flights from the same points to document a site month after month.</p>
+          <video class="svc-media" data-src="assets/video/svc-construction.mp4" poster="assets/video/svc-construction.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>
+          <span class="svc-shot"><i></i><span data-i18n="shot.build">Same point, every month</span></span>
+          <div class="svc-body">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 28h24 M7 28V12h8v16 M15 18h10v10 M7 12l4-6 4 6 M19 22h2"/></svg>
+            <h3 data-i18n="svc.build.t">Construction &amp; progress</h3>
+            <p data-i18n="svc.build.d">Repeatable flights from the same points to document a site month after month.</p>
+          </div>
         </li>
         <li class="card service reveal">
-          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 26l9-14 6 8 4-5 7 11z M21 7a3 3 0 1 0 0 .1"/></svg>
-          <h3 data-i18n="svc.adv.t">Outdoor &amp; adventure</h3>
-          <p data-i18n="svc.adv.d">Trail runs, bikes, boats and boards, tracked from above through the landscape.</p>
+          <video class="svc-media" data-src="assets/video/svc-adventure.mp4" poster="assets/video/svc-adventure.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>
+          <span class="svc-shot"><i></i><span data-i18n="shot.adv">Summit reveal</span></span>
+          <div class="svc-body">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 26l9-14 6 8 4-5 7 11z M21 7a3 3 0 1 0 0 .1"/></svg>
+            <h3 data-i18n="svc.adv.t">Outdoor &amp; adventure</h3>
+            <p data-i18n="svc.adv.d">Trail runs, bikes, boats and boards, tracked from above through the landscape.</p>
+          </div>
         </li>
-        <li class="card service reveal">
-          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="10" y="3" width="12" height="26" rx="2.5"/><path d="M14 25h4"/></svg>
-          <h3 data-i18n="svc.social.t">Social-first content</h3>
-          <p data-i18n="svc.social.d">Vertical reels and short edits planned for Instagram and TikTok from the first frame.</p>
+        <li class="card service social reveal">
+          <video class="svc-media" data-src="assets/video/svc-social.mp4" poster="assets/video/svc-social.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>
+          <span class="svc-shot"><i></i><span data-i18n="shot.social">9:16 vertical</span></span>
+          <div class="svc-body">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="10" y="3" width="12" height="26" rx="2.5"/><path d="M14 25h4"/></svg>
+            <h3 data-i18n="svc.social.t">Social-first content</h3>
+            <p data-i18n="svc.social.d">Vertical reels and short edits planned for Instagram and TikTok from the first frame.</p>
+          </div>
         </li>
       </ul>
       <dl class="specs reveal">

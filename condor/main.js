@@ -45,6 +45,7 @@ const ES = {
   'svc.build.t': 'Obras y avance', 'svc.build.d': 'Vuelos repetibles desde los mismos puntos para documentar una obra mes a mes.',
   'svc.adv.t': 'Outdoor y aventura', 'svc.adv.d': 'Trail running, bicis, botes y tablas, seguidos desde arriba a través del paisaje.',
   'svc.social.t': 'Contenido para redes', 'svc.social.d': 'Reels verticales y edits cortos pensados para Instagram y TikTok desde el primer cuadro.',
+  'shot.re': 'Revelado hacia atrás', 'shot.brand': 'Plano de apertura', 'shot.events': 'Órbita · hora dorada', 'shot.build': 'Mismo punto, cada mes', 'shot.adv': 'Revelado de cumbre', 'shot.social': '9:16 vertical',
   'spec.4k': 'Másters entregados en 4K', 'spec.vertical': 'Cortes verticales para redes', 'spec.photo': 'Fotos en alta resolución', 'spec.legal': 'Dentro de los límites de Canadá',
   'process.kicker': '03 · Proceso', 'process.title': 'Del brief al corte final',
   'step1.t': 'Brief', 'step1.d': 'Contanos el lugar, la historia y la fecha límite. Te respondemos con un plan y un presupuesto.',
@@ -431,8 +432,9 @@ function initMedia() {
     const { poster, video: src } = card.dataset;
     if (poster) {
       const img = document.createElement('img');
-      img.src = poster; img.alt = ''; img.loading = 'lazy';
+      img.src = poster; img.alt = ''; img.loading = 'lazy'; img.className = 'poster';
       card.querySelector('canvas').replaceWith(img);
+      card.querySelector('.place-photo')?.remove();   // real footage replaces the stock photo too
     }
     if (src) {
       card.tabIndex = 0; card.setAttribute('role', 'button');
@@ -449,8 +451,24 @@ function initMedia() {
   }
 }
 
+/* Service loops: load and play only while the card is on screen; posters only for less motion or data saving. */
+function initServiceLoops() {
+  const vids = [...document.querySelectorAll('.svc-media')];
+  const saveData = navigator.connection && navigator.connection.saveData;
+  if (reduceMotion || saveData || !('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    for (const { target: v, isIntersecting } of entries) {
+      if (isIntersecting) {
+        if (!v.src) v.src = v.dataset.src;
+        v.play().catch(() => {});
+      } else if (!v.paused) v.pause();
+    }
+  }, { rootMargin: '120px 0px', threshold: .15 });
+  vids.forEach(v => io.observe(v));
+}
+
 /* ======================================================================
-   LANGUAGE: English by default, Spanish for Spanish-speaking browsers.
+   LANGUAGE: always English first; Spanish only when the visitor picks it (and then it's remembered).
    ====================================================================== */
 const EN = {};
 let lang = 'en';
@@ -466,14 +484,16 @@ function setLang(next) {
   const btn = document.getElementById('lang');
   btn.textContent = next === 'es' ? 'EN' : 'ES';
   btn.setAttribute('aria-label', MSG[next].langLabel);
-  try { localStorage.setItem('condor-lang', next); } catch (e) { /* private mode */ }
 }
+const LANG_KEY = 'condor-lang-choice';   // a new key: earlier visits saved the browser's language automatically
 function initLang() {
   let saved = null;
-  try { saved = localStorage.getItem('condor-lang'); } catch (e) { /* private mode */ }
-  const initial = saved || (/^es\b/i.test(navigator.language || '') ? 'es' : 'en');
-  setLang(initial);
-  document.getElementById('lang').addEventListener('click', () => setLang(lang === 'es' ? 'en' : 'es'));
+  try { saved = localStorage.getItem(LANG_KEY); } catch (e) { /* private mode */ }
+  setLang(saved === 'es' ? 'es' : 'en');
+  document.getElementById('lang').addEventListener('click', () => {
+    setLang(lang === 'es' ? 'en' : 'es');
+    try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* private mode */ }
+  });
 }
 
 /* ---------- Navigation ---------- */
@@ -563,6 +583,7 @@ const sceneLayers = buildScene(sceneHost);
 heroMotion(sceneLayers, addHeroVideo(sceneHost));
 initTopos();
 initMedia();
+initServiceLoops();
 initLang();
 initNav();
 initReveal();
