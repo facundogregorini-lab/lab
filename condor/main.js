@@ -8,7 +8,13 @@ const SITE = {
   formEndpoint: '',     // optional: a Formspree/Basin URL to receive the form without opening the email app
   instagram: '',        // handle without @, e.g. 'condor.aerials'
   whatsapp: '',         // number with country code, digits only, e.g. '16045551234'
-  heroVideo: '',        // optional: a muted loop for the hero, e.g. 'assets/hero.mp4'
+  heroVideo: {          // the hero loop; set to null to show only the illustrated scene
+    wide: 'assets/video/hero-1080.mp4',       // large screens
+    medium: 'assets/video/hero-720.mp4',      // laptops and tablets
+    portrait: 'assets/video/hero-portrait.mp4', // phones held upright
+    poster: 'assets/video/hero-poster.jpg',
+    posterPortrait: 'assets/video/hero-poster-portrait.jpg',
+  },
   showreel: '',         // optional: the showreel video, e.g. 'assets/showreel.mp4' or a direct .mp4 URL
 };
 
@@ -140,13 +146,6 @@ function snowPath(pts, line, rand) {
 }
 
 function buildScene(host) {
-  if (SITE.heroVideo) {
-    const v = document.createElement('video');
-    Object.assign(v, { src: SITE.heroVideo, muted: true, loop: true, playsInline: true, autoplay: !reduceMotion });
-    v.setAttribute('muted', '');
-    host.append(v);
-    return [];
-  }
   const svg = el('svg', { viewBox: '0 0 1600 900', preserveAspectRatio: 'xMidYMax slice' }, host);
   const defs = el('defs', {}, svg);
 
@@ -249,8 +248,29 @@ function buildScene(host) {
   return layers;
 }
 
+/* Real footage over the drawn scene. The scene stays underneath as the fallback: before the first
+   frame, when the video can't load, and when the visitor asks for less motion or to save data. */
+function addHeroVideo(host) {
+  const hv = SITE.heroVideo;
+  if (!hv) return null;
+  const portrait = window.matchMedia('(orientation: portrait) and (max-width: 820px)').matches;
+  const saveData = navigator.connection && navigator.connection.saveData;
+  const v = document.createElement('video');
+  v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
+  v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('aria-hidden', 'true');
+  v.poster = portrait ? hv.posterPortrait : hv.poster;
+  v.className = 'hero-video';
+  host.append(v);
+  if (reduceMotion || saveData) { v.classList.add('ready'); return v; }   // poster only, no autoplay
+  v.src = portrait ? hv.portrait : (window.innerWidth * (window.devicePixelRatio || 1) > 1600 ? hv.wide : hv.medium);
+  v.addEventListener('playing', () => { v.classList.add('ready'); host.classList.add('has-video'); }, { once: true });
+  v.addEventListener('error', () => v.remove(), { once: true });
+  v.play().catch(() => v.classList.add('ready'));   // autoplay blocked: show the poster frame
+  return v;
+}
+
 /* Scroll and pointer parallax; the HUD altimeter climbs to the 120 m legal ceiling as you scroll. */
-function heroMotion(layers) {
+function heroMotion(layers, video) {
   const hero = document.querySelector('.hero');
   const altEl = document.getElementById('alt');
   const tcEl = document.getElementById('tc');
@@ -269,7 +289,8 @@ function heroMotion(layers) {
       altEl.textContent = String(Math.round(12 + s * 108)).padStart(3, '0');
       if (!reduceMotion) {
         px += (tx - px) * .05; py += (ty - py) * .05;
-        for (const g of layers) {
+        if (video) video.style.transform = `translate3d(${(-px * 10).toFixed(1)}px, ${(s * 140).toFixed(1)}px, 0) scale(${(1.06 + s * .08).toFixed(3)})`;
+        if (!video || !video.classList.contains('ready')) for (const g of layers) {
           const d = +g.dataset.depth;
           g.setAttribute('transform', `translate(${(-px * d * 40).toFixed(2)} ${(s * d * 520 - py * d * 14).toFixed(2)})`);
         }
@@ -537,7 +558,9 @@ const style = document.createElement('style');
 style.textContent = '@keyframes drift { to { transform: translateX(120px); } } .shimmer { animation: shimmer 4s ease-in-out infinite alternate; } @keyframes shimmer { to { opacity: .1; } }';
 document.head.append(style);
 
-heroMotion(buildScene(document.getElementById('scene')));
+const sceneHost = document.getElementById('scene');
+const sceneLayers = buildScene(sceneHost);
+heroMotion(sceneLayers, addHeroVideo(sceneHost));
 initTopos();
 initMedia();
 initLang();
