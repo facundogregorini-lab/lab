@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Condor · Aerial film &amp; photography in Vancouver</title>
+<meta name="description" content="Cinematic drone film and photography for brands, real estate, events and adventure across Vancouver, the Sea-to-Sky and the Fraser Valley.">
+<meta name="theme-color" content="#07111e">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Condor · A higher perspective">
+<meta property="og:description" content="Cinematic drone film and photography across Vancouver and the West Coast.">
+<meta property="og:image" content="assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<header class="nav" id="nav">
+  <a class="brand" href="#top" aria-label="Condor, home">
+    <img src="assets/condor-emblem.webp" alt="" width="44" height="34">
+    <span class="wordmark">CONDOR</span>
+  </a>
+  <nav class="nav-links" id="nav-links" aria-label="Main">
+    <a href="#work" data-i18n="nav.work">Work</a>
+    <a href="#services" data-i18n="nav.services">Services</a>
+    <a href="#process" data-i18n="nav.process">Process</a>
+    <a href="#story" data-i18n="nav.story">Story</a>
+    <a class="btn btn-sm" href="#contact" data-i18n="nav.cta">Book a flight</a>
+  </nav>
+  <div class="nav-tools">
+    <button class="lang" id="lang" type="button" aria-label="Cambiar a español">ES</button>
+    <button class="menu" id="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Menu"><span></span><span></span></button>
+  </div>
+</header>
+
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <div class="scene" id="scene" aria-hidden="true"></div>
+  <div class="hud" aria-hidden="true">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <div class="hud-row top">
+      <span class="rec"><i></i>REC <b id="tc">00:00:00:00</b></span>
+      <span class="hud-spec">4K UHD · 24P · HDR</span>
+    </div>
+    <div class="crosshair"></div>
+    <div class="hud-row bottom">
+      <span>49.2827° N · 123.1207° W</span>
+      <span class="alt">ALT <b id="alt">012</b> m <small>/ 120</small></span>
+    </div>
+  </div>
+  <div class="hero-copy">
+    <p class="eyebrow" data-i18n="hero.eyebrow">Aerial film &amp; photography · Vancouver, BC</p>
+    <h1 id="hero-title" data-i18n="hero.title">The West Coast,<br>from a higher perspective.</h1>
+    <p class="lead" data-i18n="hero.lead">Cinematic drone footage and photography for brands, real estate, events and adventure across Vancouver, the Sea-to-Sky and the Fraser Valley.</p>
+    <div class="ctas">
+      <a class="btn" href="#contact" data-i18n="hero.cta1">Book a flight</a>
+      <a class="btn btn-ghost" href="#work" data-i18n="hero.cta2">Where we fly</a>
+    </div>
+  </div>
+  <a class="scroll-cue" href="#work" aria-label="Scroll"><span></span></a>
+</section>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    <span>Vancouver</span><span>North Shore</span><span>Howe Sound</span><span>Sea-to-Sky</span><span>Squamish</span><span>Whistler</span><span>Fraser Valley</span><span>Sunshine Coast</span>
+    <span>Vancouver</span><span>North Shore</span><span>Howe Sound</span><span>Sea-to-Sky</span><span>Squamish</span><span>Whistler</span><span>Fraser Valley</span><span>Sunshine Coast</span>
+  </div>
+</div>
+
+<main id="main">
+  <section class="section" id="work" aria-labelledby="work-title">
+    <div class="wrap">
+      <header class="section-head">
+        <p class="kicker" data-i18n="work.kicker">01 · Flight log</p>
+        <h2 id="work-title" data-i18n="work.title">Where we fly</h2>
+        <p class="section-lead" data-i18n="work.lead">From harbour skylines to glacier-fed fjords, the region around Vancouver is one of the most cinematic places on Earth to film from the air. These are the places on our flight plan.</p>
+      </header>
+
+      <div class="reel reveal">
+        <canvas class="topo" data-seed="7" data-hue="sky" aria-hidden="true"></canvas>
+        <div class="reel-overlay">
+          <button class="play" type="button" id="reel-play" aria-label="Play showreel" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <div>
+            <p class="reel-title" data-i18n="work.reel">Showreel 2026</p>
+            <p class="reel-sub" id="reel-sub" data-i18n="work.reelSoon">First cut in production. Follow the first flights on Instagram.</p>
+          </div>
+        </div>
+      </div>
+
+      <ul class="grid work-grid">
+        <li class="card place reveal" data-video="" data-poster="">
+          <canvas class="topo" data-seed="11" data-hue="night" aria-hidden="true"></canvas>
+          <div class="place-info">
+            <span class="coord">49.29° N · 123.11° W</span>
+            <h3>Vancouver Harbour</h3>
+            <p data-i18n="place.vancouver">Skyline, seaplanes and the city at blue hour.</p>
+          </div>
+        </li>
+        <li class="card place reveal" data-video="" data-poster="">
+          <canvas class="topo" data-seed="23" data-hue="forest" aria-hidden="true"></canvas>
+          <div class="place-info">
+            <span class="coord">49.37° N · 123.10° W</span>
+            <h3>North Shore</h3>
+            <p data-i18n="place.north">Old-growth ridges rising straight out of the ocean.</p>
+          </div>
+        </li>
+        <li class="card place reveal" data-video="" data-poster="">
+          <canvas class="topo" data-seed="5" data-hue="sky" aria-hidden="true"></canvas>
+          <div class="place-info">
+            <span class="coord">49.50° N · 123.30° W</span>
+            <h3>Howe Sound</h3>
+            <p data-i18n="place.howe">North America's southernmost fjord, island by island.</p>
+          </div>
+        </li>
+        <li class="card place reveal" data-video="" data-poster="">
+          <canvas class="topo" data-seed="31" data-hue="granite" aria-hidden="true"></canvas>
+          <div class="place-info">
+            <span class="coord">49.68° N · 123.14° W</span>
+            <h3>Squamish</h3>
+            <p data-i18n="place.squamish">Granite walls, climbers and kite surfers on the Spit.</p>
+          </div>
+        </li>
+        <li class="card place reveal" data-video="" data-poster="">
+          <canvas class="topo" data-seed="47" data-hue="gold" aria-hidden="true"></canvas>
+          <div class="place-info">
+            <span class="coord">49.10° N · 122.30° W</span>
+            <h3>Fraser Valley</h3>
+            <p data-i18n="place.fraser">Farmland patterns, rivers and golden-hour fields.</p>
+          </div>
+        </li>
+        <li class="card place reveal" data-video="" data-poster="">
+          <canvas class="topo" data-seed="59" data-hue="ocean" aria-hidden="true"></canvas>
+          <div class="place-info">
+            <span class="coord">49.47° N · 123.76° W</span>
+            <h3>Sunshine Coast</h3>
+            <p data-i18n="place.sunshine">Coves, ferries and endless coastline.</p>
+          </div>
+        </li>
+      </ul>
+      <p class="fineprint" data-i18n="work.note">Every location is checked against NAV CANADA airspace and local park and municipal rules before take-off. Some places need special authorization, and some are no-fly zones; we tell you up front.</p>
+    </div>
+  </section>
+
+  <section class="section alt" id="services" aria-labelledby="services-title">
+    <div class="wrap">
+      <header class="section-head">
+        <p class="kicker" data-i18n="services.kicker">02 · Services</p>
+        <h2 id="services-title" data-i18n="services.title">What we film</h2>
+        <p class="section-lead" data-i18n="services.lead">One pilot, one camera in the sky, and a story told from above. Tell us what you need it for and we'll shape the flight around it.</p>
+      </header>
+      <ul class="grid services">
+        <li class="card service reveal">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 28V14l12-9 12 9v14H4z M12 28v-8h8v8"/></svg>
+          <h3 data-i18n="svc.re.t">Real estate &amp; architecture</h3>
+          <p data-i18n="svc.re.d">Listings that show the view, the lot and the neighbourhood, not just the kitchen.</p>
+        </li>
+        <li class="card service reveal">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="8" width="20" height="16" rx="2"/><path d="M23 14l6-4v12l-6-4"/></svg>
+          <h3 data-i18n="svc.brand.t">Brand &amp; tourism films</h3>
+          <p data-i18n="svc.brand.d">Opening shots and hero moments for brands, hotels, wineries and destinations.</p>
+        </li>
+        <li class="card service reveal">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27s-11-6.5-11-14a6 6 0 0 1 11-3.3A6 6 0 0 1 27 13c0 7.5-11 14-11 14z"/></svg>
+          <h3 data-i18n="svc.events.t">Weddings &amp; events</h3>
+          <p data-i18n="svc.events.d">The venue, the coastline and everyone together, from an angle no guest can get.</p>
+        </li>
+        <li class="card service reveal">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 28h24 M7 28V12h8v16 M15 18h10v10 M7 12l4-6 4 6 M19 22h2"/></svg>
+          <h3 data-i18n="svc.build.t">Construction &amp; progress</h3>
+          <p data-i18n="svc.build.d">Repeatable flights from the same points to document a site month after month.</p>
+        </li>
+        <li class="card service reveal">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 26l9-14 6 8 4-5 7 11z M21 7a3 3 0 1 0 0 .1"/></svg>
+          <h3 data-i18n="svc.adv.t">Outdoor &amp; adventure</h3>
+          <p data-i18n="svc.adv.d">Trail runs, bikes, boats and boards, tracked from above through the landscape.</p>
+        </li>
+        <li class="card service reveal">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="10" y="3" width="12" height="26" rx="2.5"/><path d="M14 25h4"/></svg>
+          <h3 data-i18n="svc.social.t">Social-first content</h3>
+          <p data-i18n="svc.social.d">Vertical reels and short edits planned for Instagram and TikTok from the first frame.</p>
+        </li>
+      </ul>
+      <dl class="specs reveal">
+        <div><dt>4K</dt><dd data-i18n="spec.4k">Masters delivered in 4K</dd></div>
+        <div><dt>9:16</dt><dd data-i18n="spec.vertical">Vertical cuts for social</dd></div>
+        <div><dt>RAW</dt><dd data-i18n="spec.photo">High-resolution stills</dd></div>
+        <div><dt>120 m</dt><dd data-i18n="spec.legal">Flown within Canadian limits</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section" id="process" aria-labelledby="process-title">
+    <div class="wrap">
+      <header class="section-head">
+        <p class="kicker" data-i18n="process.kicker">03 · Process</p>
+        <h2 id="process-title" data-i18n="process.title">From brief to final cut</h2>
+      </header>
+      <ol class="steps">
+        <li class="step reveal">
+          <span class="step-n">01</span>
+          <h3 data-i18n="step1.t">Brief</h3>
+          <p data-i18n="step1.d">Tell us the place, the story and the deadline. We reply with a plan and a quote.</p>
+        </li>
+        <li class="step reveal">
+          <span class="step-n">02</span>
+          <h3 data-i18n="step2.t">Plan</h3>
+          <p data-i18n="step2.d">Airspace, permissions, weather, tides and the angle of the sun, all checked before anyone drives out.</p>
+        </li>
+        <li class="step reveal">
+          <span class="step-n">03</span>
+          <h3 data-i18n="step3.t">Fly</h3>
+          <p data-i18n="step3.d">We capture at the best light, with several passes and angles, plus stills while we're up there.</p>
+        </li>
+        <li class="step reveal">
+          <span class="step-n">04</span>
+          <h3 data-i18n="step4.t">Deliver</h3>
+          <p data-i18n="step4.d">Edited and colour-graded footage, ready for the web, the big screen and your phone.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section story" id="story" aria-labelledby="story-title">
+    <div class="wrap story-grid">
+      <figure class="story-art reveal">
+        <img src="assets/condor-emblem.webp" alt="Condor emblem: an Andean condor with open wings in front of snowy peaks, the Argentine Sun of May above and a red maple leaf on its tail" width="1000" height="773" loading="lazy">
+      </figure>
+      <div class="story-copy reveal">
+        <p class="kicker" data-i18n="story.kicker">04 · Story</p>
+        <h2 id="story-title" data-i18n="story.title">From the Andes to the Coast Mountains.</h2>
+        <p data-i18n="story.p1">The Andean condor is one of the largest flying birds on the planet, with wings that reach 3.3 metres. It barely flaps them: it reads the wind, rides the thermals and sees the whole mountain range at once.</p>
+        <p data-i18n="story.p2">Condor was born in Argentina and took off in Vancouver. The Sun of May and the maple leaf share the same emblem because this project is both: southern eyes looking at the Pacific Northwest from above.</p>
+        <p class="motto">Sky knows no limits</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section contact" id="contact" aria-labelledby="contact-title">
+    <div class="wrap contact-grid">
+      <div class="contact-copy">
+        <p class="kicker" data-i18n="contact.kicker">05 · Contact</p>
+        <h2 id="contact-title" data-i18n="contact.title">Let's plan your flight.</h2>
+        <p data-i18n="contact.lead">Tell us where and when. We reply with what's possible in that airspace, the best light for the shot and a quote.</p>
+        <dl class="facts">
+          <div><dt data-i18n="facts.area.t">Coverage</dt><dd data-i18n="facts.area.d">Metro Vancouver · Sea-to-Sky · Fraser Valley · Sunshine Coast</dd></div>
+          <div><dt data-i18n="facts.lang.t">Languages</dt><dd>English · Español</dd></div>
+          <div><dt data-i18n="facts.out.t">You receive</dt><dd data-i18n="facts.out.d">Edited video, stills and vertical cuts for social</dd></div>
+        </dl>
+        <ul class="socials" id="socials"></ul>
+      </div>
+      <form class="form reveal" id="contact-form" novalidate>
+        <div class="field">
+          <label for="f-name" data-i18n="form.name">Name</label>
+          <input id="f-name" name="name" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="f-email" data-i18n="form.email">Email</label>
+          <input id="f-email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="f-type" data-i18n="form.type">Project</label>
+          <select id="f-type" name="type">
+            <option data-i18n="opt.re">Real estate &amp; architecture</option>
+            <option data-i18n="opt.brand">Brand or tourism film</option>
+            <option data-i18n="opt.events">Wedding or event</option>
+            <option data-i18n="opt.build">Construction progress</option>
+            <option data-i18n="opt.adv">Outdoor &amp; adventure</option>
+            <option data-i18n="opt.social">Social content</option>
+            <option data-i18n="opt.other">Something else</option>
+          </select>
+        </div>
+        <div class="field half">
+          <label for="f-date" data-i18n="form.date">Date (approx.)</label>
+          <input id="f-date" name="date" type="date">
+        </div>
+        <div class="field half">
+          <label for="f-where" data-i18n="form.where">Location</label>
+          <input id="f-where" name="where" placeholder="Squamish, BC">
+        </div>
+        <div class="field">
+          <label for="f-msg" data-i18n="form.msg">Tell us about it</label>
+          <textarea id="f-msg" name="message" rows="4" required></textarea>
+        </div>
+        <button class="btn btn-block" type="submit" data-i18n="form.send">Send request</button>
+        <p class="form-status" id="form-status" role="status"></p>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <img src="assets/condor-emblem.webp" alt="" width="72" height="56" loading="lazy">
+      <div>
+        <p class="wordmark big">CONDOR</p>
+        <p class="tagline">Sky knows no limits</p>
+      </div>
+    </div>
+    <p class="footer-meta"><span data-i18n="footer.based">Based in Vancouver, British Columbia</span> · <span id="year"></span></p>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lightbox-close" id="lightbox-close" type="button" aria-label="Close">×</button>
+  <video id="lightbox-video" controls playsinline></video>
+</div>
+
+<script src="main.js" defer></script>
+</body>
+</html>
