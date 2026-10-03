@@ -6,8 +6,9 @@ Web de Condor: filmación y fotografía con dron en Vancouver, el Sea-to-Sky, el
 
 - **Portada con video aéreo y visor de dron**: un loop de ~13 s (montañas sobre un mar de nubes, una cresta nevada y Vancouver desde el aire) con el visor encima: REC, timecode y un altímetro que llega a 120 m (el límite legal en Canadá) al hacer scroll. Debajo hay una ilustración de las Coast Mountains hecha en código, que se ve mientras carga el video, si falla, si la persona pidió "reducir movimiento" o si tiene activado el ahorro de datos.
 - **Dónde volamos**: seis lugares, cada uno con un mapa topográfico animado y una ruta de vuelo. Se reemplazan por material real cuando esté listo (ver abajo).
-- Servicios, proceso, la historia de la marca (Andes + Canadá) y formulario de contacto.
-- **Inglés y español**: el botón **ES/EN** cambia el idioma. Los navegadores en español abren en español.
+- **Qué filmamos**: seis servicios, cada uno con un loop aéreo de fondo (6 s, en loop sin cortes) y una etiqueta tipo visor con el tipo de toma. Los videos cargan y se reproducen solo cuando la tarjeta está en pantalla; con "reducir movimiento" o ahorro de datos se ve una imagen fija. En *Social-first* el clip es vertical, dentro de un celular.
+- Proceso, la historia de la marca (Andes + Canadá) y formulario de contacto.
+- **Inglés y español**: siempre abre en inglés. El botón **ES/EN** cambia el idioma y la elección se recuerda en ese navegador.
 - Se ve bien en celular, respeta "reducir movimiento" y tiene imagen para compartir en redes (Open Graph).
 
 ## Antes de publicar: configuración
@@ -50,6 +51,26 @@ ffmpeg -ss 1 -i hero-portrait.mp4 -frames:v 1 -q:v 5 hero-poster-portrait.jpg
 ```
 
 Apuntá a menos de 5 MB para el de 1080p: el texto blanco se lee mejor si la toma no es demasiado clara en la mitad izquierda.
+
+## Videos de los servicios
+
+También son **material de stock**, con licencias que permiten uso comercial sin citar la fuente. Se usaron solo clips con esas licencias (en Mixkit se descartaron los de licencia *Restricted*, que es solo para uso personal):
+
+| Tarjeta | Archivo | Fuente |
+| --- | --- | --- |
+| Real estate | `svc-realestate.mp4` | [Coverr · Lake house in Texas](https://coverr.co/videos/lake-house-in-texas-5pa8mbtj0v) |
+| Brand & tourism | `svc-tourism.mp4` | [Coverr · Igloo tents near the mountains](https://coverr.co/videos/igloo-tents-near-the-mountains-lsf2x8ukip) (Torres del Paine) |
+| Weddings & events | `svc-events.mp4` | [Coverr · Party at the lake](https://coverr.co/videos/party-at-the-lake-dncm6er1kc) |
+| Construction | `svc-construction.mp4` | [Mixkit 42333](https://mixkit.co/free-stock-video/construction-zone-in-a-city-in-an-aerial-shot-42333/) |
+| Outdoor & adventure | `svc-adventure.mp4` | [Coverr · Tent on a mountain top](https://coverr.co/videos/tent-on-a-mountain-top-oa02yqzlsi) |
+| Social-first | `svc-social.mp4` | [Mixkit 51501](https://mixkit.co/free-stock-video/flying-over-a-green-mangrove-swamp-with-mountain-in-the-51501/) |
+
+Igual que la portada, sirven para mostrar el estilo, no como trabajo propio. Para reemplazarlos con tomas propias, exportá 6 s sin audio en 720×540 (vertical: 360×640) y su póster:
+
+```bash
+ffmpeg -ss 2 -t 6 -i toma.mov -vf "scale=-2:540,crop=720:540" -an -c:v libx264 -crf 29 -pix_fmt yuv420p -movflags +faststart svc-realestate.mp4
+ffmpeg -ss 1 -i svc-realestate.mp4 -frames:v 1 -q:v 6 svc-realestate.jpg
+```
 
 ## Verlo en local
 
