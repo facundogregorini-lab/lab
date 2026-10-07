@@ -1,3 +1,4 @@
+import { APP_NAME } from '@/lib/brand'
 import { prisma } from '@/lib/prisma'
 import { create as contentDisposition } from 'content-disposition'
 import { NextResponse } from 'next/server'
@@ -53,7 +54,7 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid group ID' }, { status: 404 })
 
   const date = new Date().toISOString().split('T')[0]
-  const filename = `Spliit Export - ${date}`
+  const filename = `${APP_NAME} - ${date}`
   return NextResponse.json(group, {
     headers: {
       'content-type': 'application/json',

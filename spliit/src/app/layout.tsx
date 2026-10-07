@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/toaster'
 import { Analytics } from '@/lib/analytics/analytics'
 import { getAnalyticsConfig } from '@/lib/analytics/config'
+import { APP_DESCRIPTION, APP_NAME, UPSTREAM_URL } from '@/lib/brand'
 import { effectiveBaseUrl } from '@/lib/env'
 import { TRPCProvider } from '@/trpc/client'
 import type { Metadata, Viewport } from 'next'
@@ -24,32 +25,27 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(effectiveBaseUrl),
     title: {
       default: t('metaTitle'),
-      template: '%s · Spliit',
+      template: `%s · ${APP_NAME}`,
     },
-    description:
-      'Spliit is a minimalist web application to share expenses with friends and family. No ads, no account, no problem.',
+    description: APP_DESCRIPTION,
     openGraph: {
       title: t('metaTitle'),
-      description:
-        'Spliit is a minimalist web application to share expenses with friends and family. No ads, no account, no problem.',
+      description: APP_DESCRIPTION,
       images: `/banner.png`,
       type: 'website',
       url: '/',
     },
     twitter: {
       card: 'summary_large_image',
-      creator: '@scastiel',
-      site: '@scastiel',
       images: `/banner.png`,
       title: t('metaTitle'),
-      description:
-        'Spliit is a minimalist web application to share expenses with friends and family. No ads, no account, no problem.',
+      description: APP_DESCRIPTION,
     },
     appleWebApp: {
       capable: true,
-      title: 'Spliit',
+      title: APP_NAME,
     },
-    applicationName: 'Spliit',
+    applicationName: APP_NAME,
     icons: [
       {
         url: '/android-chrome-192x192.png',
@@ -69,6 +65,15 @@ export const viewport: Viewport = {
   themeColor: '#047857',
 }
 
+function BrandLogo({ as: Tag = 'span' }: { as?: 'h1' | 'span' }) {
+  return (
+    <Tag className="m-1 flex items-center gap-2 text-lg font-bold text-primary">
+      <Image src="/logo.svg" width={32} height={32} alt="" />
+      {APP_NAME}
+    </Tag>
+  )
+}
+
 function Content({ children }: { children: React.ReactNode }) {
   const t = useTranslations()
   return (
@@ -78,15 +83,7 @@ function Content({ children }: { children: React.ReactNode }) {
           className="flex items-center gap-2 hover:scale-105 transition-transform"
           href="/"
         >
-          <h1>
-            <Image
-              src="/logo-with-text.png"
-              className="m-1 h-auto w-auto"
-              width={(35 * 522) / 180}
-              height={35}
-              alt="Spliit"
-            />
-          </h1>
+          <BrandLogo as="h1" />
         </Link>
         <div role="navigation" aria-label="Menu" className="flex">
           <ul className="flex items-center text-sm">
@@ -115,37 +112,19 @@ function Content({ children }: { children: React.ReactNode }) {
       <footer className="sm:p-8 md:p-16 sm:mt-16 sm:text-sm md:text-base md:mt-32 bg-slate-50 dark:bg-card border-t p-6 mt-8 flex flex-col sm:flex-row sm:justify-between gap-4 text-xs [&_a]:underline">
         <div className="flex flex-col space-y-2">
           <div className="sm:text-lg font-semibold text-base flex space-x-2 items-center">
-            <Link className="flex items-center gap-2" href="/">
-              <Image
-                src="/logo-with-text.png"
-                className="m-1 h-auto w-auto"
-                width={(35 * 522) / 180}
-                height={35}
-                alt="Spliit"
-              />
+            <Link className="flex items-center gap-2 !no-underline" href="/">
+              <BrandLogo />
             </Link>
           </div>
-          <div className="flex flex-col space-y a--no-underline-text-white">
-            <span>{t('Footer.madeIn')}</span>
-            <span>
-              {t.rich('Footer.builtBy', {
-                author: (txt) => (
-                  <a href="https://scastiel.dev" target="_blank" rel="noopener">
-                    {txt}
-                  </a>
-                ),
-                source: (txt) => (
-                  <a
-                    href="https://github.com/spliit-app/spliit/graphs/contributors"
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    {txt}
-                  </a>
-                ),
-              })}
-            </span>
-          </div>
+          <p>
+            {t.rich('Footer.basedOn', {
+              source: (txt) => (
+                <a href={UPSTREAM_URL} target="_blank" rel="noopener">
+                  {txt}
+                </a>
+              ),
+            })}
+          </p>
         </div>
       </footer>
       <Toaster />

@@ -1,4 +1,3 @@
-import { CategorySelector } from '@/components/category-selector'
 import { CurrencySelector } from '@/components/currency-selector'
 import { ExpenseDocumentsInput } from '@/components/expense-documents-input'
 import { SubmitButton } from '@/components/submit-button'
@@ -311,7 +310,7 @@ export function ExpenseForm({
             recurrenceRule: RecurrenceRule.NONE,
           },
   })
-  const [isCategoryLoading, setCategoryLoading] = useState(false)
+  const [, setCategoryLoading] = useState(false)
   const activeUserId = useActiveUser(group.id)
   const sendEvent = useAnalytics()
 
@@ -866,28 +865,7 @@ export function ExpenseForm({
                 </CollapsibleContent>
               </Collapsible>
             </div>
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem className="sm:order-2">
-                  <FormLabel>{t('categoryField.label')}</FormLabel>
-                  <CategorySelector
-                    categories={categories}
-                    defaultValue={
-                      form.watch(field.name) as number // may be overwritten externally
-                    }
-                    onValueChange={field.onChange}
-                    isLoading={isCategoryLoading}
-                  />
-                  <FormDescription>
-                    {t(`${sExpense}.categoryFieldDescription`)}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            {/* Categories are hidden to keep the form short; expenses stay "General". */}
             <FormField
               control={form.control}
               name="amount"

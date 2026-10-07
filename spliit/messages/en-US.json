@@ -1,10 +1,10 @@
 {
   "Homepage": {
-    "title": "Share <strong>Expenses</strong> with <strong>Friends & Family</strong>",
-    "metaTitle": "Spliit · Share Expenses with Friends & Family",
-    "description": "Welcome to your new <strong>Spliit</strong> instance !",
+    "title": "Shared expenses, <strong>clear accounts</strong>",
+    "metaTitle": "Cuentas Claras · Share expenses with friends",
+    "description": "Create a group, send the link to your friend and log what each of you pays. The app works out who owes whom. <strong>No account, no login.</strong>",
     "button": {
-      "groups": "Go to groups",
+      "groups": "Get started",
       "github": "GitHub"
     }
   },
@@ -19,8 +19,7 @@
     "retry": "Try again"
   },
   "Footer": {
-    "madeIn": "Made in Montréal, Québec 🇨🇦",
-    "builtBy": "Built by <author>Sebastien Castiel</author> and <source>contributors</source>"
+    "basedOn": "Based on <source>Spliit</source>, free software under the MIT license."
   },
   "Expenses": {
     "title": "Expenses",
@@ -457,7 +456,8 @@
       "title": "Share via QR Code",
       "description": "Scan this QR code to open the group on any device.",
       "download": "Download QR Code"
-    }
+    },
+    "shareText": "Join my group {groupName} on {appName}"
   },
   "SchemaErrors": {
     "min1": "Enter at least one character.",
@@ -564,7 +564,7 @@
   },
   "Pwa": {
     "updateTitle": "Update available",
-    "updateDescription": "A new version of Spliit is available.",
+    "updateDescription": "A new version of Cuentas Claras is available.",
     "reload": "Reload"
   }
 }

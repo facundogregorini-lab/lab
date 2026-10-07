@@ -1,12 +1,14 @@
-# Spliit · versión de lab
+# Cuentas Claras
 
 Gastos compartidos con amigos, sin cuentas ni login: se crea un grupo, se comparte el link y cada uno carga lo que pagó. La app calcula quién le debe a quién.
 
-Es una copia de [Spliit](https://github.com/spliit-app/spliit) (licencia MIT, ver `LICENSE`) tomada del commit `b73d551`, con estos cambios:
+Es una copia modificada de [Spliit](https://github.com/spliit-app/spliit) (licencia MIT, ver `LICENSE`) tomada del commit `b73d551`, con estos cambios:
 
+- **Nombre y logo propios.** El nombre está en `src/lib/brand.ts` y en los textos de `messages/es.json` y `messages/en-US.json`; los íconos, en `public/` y `src/app/`.
 - **Siempre en español** salvo que se elija otro idioma en el selector.
 - **Grupos de a dos**: el formulario arranca con dos personas (se pueden agregar más).
 - **Pesos por defecto**: moneda propia con símbolo `$`. El peso argentino no está en la lista de cotizaciones de Spliit, así que no hay conversión entre monedas salvo que se configure `DEFAULT_CURRENCY_CODE` (por ejemplo `USD`).
+- **Más simple**: solo las pestañas Gastos, Balances y Ajustes. Se sacaron del menú Información, Estadísticas y Actividad, el campo de información del grupo y el selector de categoría de los gastos (todos quedan como "General").
 
 ## Desplegar en Vercel
 

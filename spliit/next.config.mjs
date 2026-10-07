@@ -28,6 +28,9 @@ const nextConfig = {
   // files Next.js traced as actually reachable at runtime. The Docker runtime
   // stage copies that instead of a full production `node_modules`.
   output: 'standalone',
+  // This app lives in a subfolder of a repo with its own lockfile: pin the root.
+  outputFileTracingRoot: import.meta.dirname,
+  turbopack: { root: import.meta.dirname },
   images: {
     remotePatterns
   },

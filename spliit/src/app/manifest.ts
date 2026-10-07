@@ -1,11 +1,11 @@
+import { APP_DESCRIPTION, APP_NAME } from '@/lib/brand'
 import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Spliit',
-    short_name: 'Spliit',
-    description:
-      'A minimalist web application to share expenses with friends and family. No ads, no account, no problem.',
+    name: APP_NAME,
+    short_name: APP_NAME,
+    description: APP_DESCRIPTION,
     start_url: '/groups',
     id: '/groups',
     display: 'standalone',

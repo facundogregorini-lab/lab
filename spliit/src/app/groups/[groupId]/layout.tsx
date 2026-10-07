@@ -1,4 +1,5 @@
 import { cached } from '@/app/cached-functions'
+import { APP_NAME } from '@/lib/brand'
 import { Metadata } from 'next'
 import { PropsWithChildren } from 'react'
 import { GroupLayoutClient } from './layout.client'
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: {
       default: group?.name ?? '',
-      template: `%s · ${group?.name} · Spliit`,
+      template: `%s · ${group?.name} · ${APP_NAME}`,
     },
   }
 }

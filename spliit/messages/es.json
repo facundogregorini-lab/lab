@@ -1,10 +1,10 @@
 {
   "Homepage": {
-    "title": "Comparte <strong>Gastos</strong> con <strong>Amigos y Familia</strong>",
-    "metaTitle": "Spliit · Comparte gastos con amigos y familia",
-    "description": "¡Te damos la bienvenida a tu nueva instancia de <strong>Spliit</strong>!",
+    "title": "Gastos compartidos, <strong>cuentas claras</strong>",
+    "metaTitle": "Cuentas Claras · Gastos compartidos con amigos",
+    "description": "Creá un grupo, pasale el link a tu amigo y anoten lo que paga cada uno. La app calcula quién le debe a quién. <strong>Sin cuentas ni login.</strong>",
     "button": {
-      "groups": "Ir a grupos",
+      "groups": "Empezar",
       "github": "GitHub"
     }
   },
@@ -12,8 +12,7 @@
     "groups": "Grupos"
   },
   "Footer": {
-    "madeIn": "Hecho en Montréal, Québec 🇨🇦",
-    "builtBy": "Desarrollado por <author>Sebastien Castiel</author> y <source>colaboradores</source>"
+    "basedOn": "Basado en <source>Spliit</source>, software libre con licencia MIT."
   },
   "Expenses": {
     "title": "Gastos",
@@ -414,7 +413,8 @@
     "warning": "Cuidado!",
     "warningHelp": "Todas las personas que tengan la URL del grupo podrán ver y editar los gastos. ¡Comparte con precaución!",
     "copyLink": "Copiar enlace",
-    "shareLink": "Compartir enlace"
+    "shareLink": "Compartir enlace",
+    "shareText": "Sumate a mi grupo {groupName} en {appName}"
   },
   "SchemaErrors": {
     "min1": "Introduzca al menos un carácter.",
@@ -518,7 +518,7 @@
   },
   "Pwa": {
     "updateTitle": "Actualización disponible",
-    "updateDescription": "Hay una nueva versión de Spliit disponible.",
+    "updateDescription": "Hay una nueva versión de Cuentas Claras disponible.",
     "reload": "Recargar"
   }
 }
