@@ -1,41 +1,15 @@
 'use server'
 
-import { defaultLocale, Locale, Locales, locales } from '@/i18n/request'
-import { match } from '@formatjs/intl-localematcher'
-import Negotiator from 'negotiator'
-import { cookies, headers } from 'next/headers'
+import { Locale } from '@/i18n/request'
+import { cookies } from 'next/headers'
 
 const COOKIE_NAME = 'NEXT_LOCALE'
-
-function getAcceptLanguageLocale(requestHeaders: Headers, locales: Locales) {
-  let locale
-  const languages = new Negotiator({
-    headers: {
-      'accept-language': requestHeaders.get('accept-language') || undefined,
-    },
-  }).languages()
-  try {
-    locale = match(languages, locales, defaultLocale)
-  } catch (e) {
-    // invalid language - fallback to default
-    locale = defaultLocale
-  }
-  return locale
-}
+const APP_LOCALE: Locale = 'es'
 
 export async function getUserLocale() {
-  let locale
-
-  // Prio 1: use existing cookie
-  locale = (await cookies()).get(COOKIE_NAME)?.value
-
-  // Prio 2: use `accept-language` header
-  // Prio 3: use default locale
-  if (!locale) {
-    locale = getAcceptLanguageLocale(await headers(), locales)
-  }
-
-  return locale
+  // Prio 1: use existing cookie (set by the language switcher)
+  // Prio 2: Spanish
+  return (await cookies()).get(COOKIE_NAME)?.value ?? APP_LOCALE
 }
 
 export async function setUserLocale(locale: Locale) {

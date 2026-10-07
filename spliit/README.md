@@ -1,3 +1,33 @@
+# Spliit · versión de lab
+
+Gastos compartidos con amigos, sin cuentas ni login: se crea un grupo, se comparte el link y cada uno carga lo que pagó. La app calcula quién le debe a quién.
+
+Es una copia de [Spliit](https://github.com/spliit-app/spliit) (licencia MIT, ver `LICENSE`) tomada del commit `b73d551`, con estos cambios:
+
+- **Siempre en español** salvo que se elija otro idioma en el selector.
+- **Grupos de a dos**: el formulario arranca con dos personas (se pueden agregar más).
+- **Pesos por defecto**: moneda propia con símbolo `$`. El peso argentino no está en la lista de cotizaciones de Spliit, así que no hay conversión entre monedas salvo que se configure `DEFAULT_CURRENCY_CODE` (por ejemplo `USD`).
+
+## Desplegar en Vercel
+
+1. En Vercel, **Add New → Project**, importá `facundogregorini-lab/lab` y en **Root Directory** elegí `spliit`.
+2. En **Storage**, creá una base **Postgres** (por ejemplo Neon, plan gratuito) y conectala al proyecto. Tiene que dejar las variables `POSTGRES_PRISMA_URL` y `POSTGRES_URL_NON_POOLING`; si la integración usa otros nombres, crealas a mano en **Settings → Environment Variables** con la URL con pooling y la directa.
+3. Opcional: `BASE_URL` con la URL pública del sitio.
+4. **Deploy.** Al instalar dependencias se aplican solas las migraciones de la base (`prisma migrate deploy`).
+
+## Correrlo en tu computadora
+
+Requiere Node 24 y un Postgres.
+
+```bash
+cd spliit
+cp .env.example .env   # ajustá las URLs de Postgres
+npm install            # aplica las migraciones
+npm run dev            # http://localhost:3000
+```
+
+---
+
 [<img alt="Spliit" height="60" src="https://github.com/spliit-app/spliit/blob/main/public/logo-with-text.png?raw=true" />](https://spliit.app)
 
 Spliit is a free and open source alternative to Splitwise. You can either use the official instance at [Spliit.app](https://spliit.app), or deploy your own instance:

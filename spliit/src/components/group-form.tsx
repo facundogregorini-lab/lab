@@ -80,12 +80,12 @@ export function GroupForm({
       : {
           name: '',
           information: '',
-          currency: '',
-          currencyCode: defaultCurrencyCode, // TODO: derive from the locale when not configured
+          // Pesos: not in the exchange-rate list, so it's a custom '$' currency
+          currency: defaultCurrencyCode ? '' : '$',
+          currencyCode: defaultCurrencyCode,
           participants: [
             { name: t('Participants.John') },
             { name: t('Participants.Jane') },
-            { name: t('Participants.Jack') },
           ],
         },
   })
