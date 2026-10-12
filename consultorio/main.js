@@ -9,11 +9,13 @@
   $('#yr').textContent = new Date().getFullYear();
 
   // Header: sólido al bajar, botón flotante de WhatsApp y menú activo
-  var top = $('#top'), fab = $('.fab'), hero = $('.hero');
+  var top = $('#top'), fab = $('.fab'), mbar = $('.mbar'), hero = $('.hero'), contact = $('#contacto');
   function onScroll() {
-    var y = window.scrollY;
+    var y = window.scrollY, past = y > hero.offsetHeight * 0.6;
     top.classList.toggle('is-solid', y > 40);
-    fab.classList.toggle('is-on', y > hero.offsetHeight * 0.6);
+    fab.classList.toggle('is-on', past);
+    // En el celular la barra se esconde al llegar a Contacto, que ya tiene los mismos botones
+    mbar.classList.toggle('is-on', past && contact.getBoundingClientRect().top > window.innerHeight * 0.75);
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
@@ -142,6 +144,25 @@
     });
   });
 
+  // En el celular se muestran los primeros 6 casos y el resto con "Ver todos"
+  var cases = $('#cases'), more = $('.more'), mq = matchMedia('(max-width: 760px)');
+  function collapse() {
+    var on = mq.matches && !cases.dataset.open;
+    cases.classList.toggle('is-collapsed', on);
+    var n = figs.filter(function (g) { return !g.hidden; }).length;
+    more.hidden = !on || n <= 6;
+    $('span', more).textContent = '(' + n + ')';
+  }
+  more.addEventListener('click', function () {
+    cases.dataset.open = '1';
+    collapse();
+    var f = figs.filter(function (g) { return !g.hidden; })[6];
+    if (f) { var b = $('.zoom', f); b.focus({ preventScroll: true }); }
+  });
+  fbtn.forEach(function (b) { b.addEventListener('click', collapse); });
+  if (mq.addEventListener) mq.addEventListener('change', collapse);
+  collapse();
+
   // Visor de imágenes
   var lb = $('#lb'), lbImg = $('img', lb), lbCap = $('.lb__cap', lb), group = [], idx = 0, opener = null;
   function caption(btn) {
@@ -156,7 +177,7 @@
     lbImg.alt = $('img', b).alt;
     lbCap.textContent = caption(b) + (group.length > 1 ? '  ·  ' + (idx + 1) + ' / ' + group.length : '');
   }
-  function visible(b) { return b.offsetParent !== null && !b.closest('[data-hidden=true]'); }
+  function visible(b) { return !b.closest('[hidden], [data-hidden=true]'); }
   $$('.zoom').forEach(function (b) {
     b.addEventListener('click', function () {
       var scope = b.closest('.cases, .cpanel, .tour') || document;

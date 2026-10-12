@@ -100,7 +100,7 @@
       <h2 class="reveal">Luz natural y un pulmón verde, para que estés tranquilo</h2>
       <p class="head__lead reveal">Los dos consultorios tienen ventanales sobre un jardín. Un entorno pensado para que cada visita sea calma, sin apuro y con tiempo para explicarte todo.</p>
     </div>
-    <div class="tour">
+    <div class="tour" aria-label="Fotos del consultorio">
       <figure class="tour__a reveal"><button class="zoom" type="button" data-full="assets/img/sala-espera.webp"><img src="assets/img/sala-espera.webp" alt="Sala de espera con sillón gris y cuadros" width="1400" height="1050" loading="lazy"></button><figcaption>Sala de espera</figcaption></figure>
       <figure class="tour__b reveal"><button class="zoom" type="button" data-full="assets/img/recepcion.webp"><img src="assets/img/recepcion.webp" alt="Recepción con pared de ladrillo y planta" width="1050" height="1400" loading="lazy"></button><figcaption>Recepción</figcaption></figure>
       <figure class="tour__c reveal"><button class="zoom" type="button" data-full="assets/img/consultorio-1.webp"><img src="assets/img/consultorio-1.webp" alt="Consultorio 1 con sillón odontológico y ventanal" width="1050" height="1400" loading="lazy"></button><figcaption>Consultorio 1</figcaption></figure>
@@ -111,6 +111,7 @@
       <div class="vtour__txt reveal">
         <h3>Recorrido en video</h3>
         <p>Pasá por la sala de espera y los dos consultorios antes de venir.</p>
+        <p class="swipe" aria-hidden="true">Deslizá para ver más →</p>
       </div>
       <div class="vtour__grid">
         <figure class="phone reveal"><video data-src="assets/video/sala-espera.mp4" poster="assets/video/sala-espera.webp" muted loop playsinline preload="none" aria-label="Video de la sala de espera"></video><figcaption>Sala de espera</figcaption></figure>
@@ -254,6 +255,7 @@
         <figcaption>Híbrida inmediata: planificación, implantes colocados y prótesis provisoria</figcaption>
       </figure>
     </div>
+    <button class="more" type="button" hidden>Ver todos los casos <span></span></button>
   </div>
 </section>
 
@@ -318,6 +320,11 @@
 </footer>
 
 <a class="fab" href="https://wa.me/5491124037668?text=Hola%2C%20quisiera%20solicitar%20un%20turno." target="_blank" rel="noopener" aria-label="Pedir turno por WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-wa"/></svg></a>
+
+<nav class="mbar" aria-label="Acciones rápidas">
+  <a class="mbar__wa" href="https://wa.me/5491124037668?text=Hola%2C%20quisiera%20solicitar%20un%20turno." target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-wa"/></svg>Pedir turno</a>
+  <a class="mbar__map" href="https://maps.app.goo.gl/S3PopYjgpsYwATNn6" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pin"/></svg>Cómo llegar</a>
+</nav>
 
 <dialog class="lb" id="lb" aria-label="Imagen ampliada">
   <img alt="">

@@ -12,6 +12,8 @@ Web del consultorio (Aráoz 2879, 1° D, Buenos Aires), hecha a partir del bocet
 - **Equipo**: la historia desde 1969 y los profesionales.
 - **Contacto**: WhatsApp, mail, reseñas en Google Maps y mapa.
 
+En el celular, las fotos y los videos del consultorio se deslizan de costado, los casos muestran 6 y el resto con "Ver todos", y una barra fija abajo tiene "Pedir turno" (WhatsApp) y "Cómo llegar"; se esconde al llegar a Contacto.
+
 Respeta "reducir movimiento" y el ahorro de datos, funciona con teclado y tiene datos estructurados (`Dentist`) para buscadores.
 
 ## Cambiar contenido
