@@ -3,12 +3,20 @@
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 const root = path.resolve(__dirname, '..');
 process.env.MANUELITA_MEMORY_DB ??= '1';
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json' };
 
 function createServer() {
   return http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const match = /^\/api\/([a-z]+)$/.exec(url.pathname);
     if (!match) {
+      // Static files of the other projects (e.g. /biblioteca-el-regreso/); everything else is the puzzle.
+      let file = path.join(root, decodeURIComponent(url.pathname));
+      if (file.startsWith(root + path.sep) && fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
+      if (url.pathname !== '/' && file.startsWith(root + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) {
+        res.setHeader('Content-Type', TYPES[path.extname(file)] || 'application/octet-stream');
+        return res.end(fs.readFileSync(file));
+      }
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.end(fs.readFileSync(path.join(root, 'index.html')));
     }
