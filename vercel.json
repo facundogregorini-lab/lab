@@ -1,0 +1,8 @@
+{
+  "headers": [
+    {
+      "source": "/consultorio/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    }
+  ]
+}
