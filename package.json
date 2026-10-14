@@ -8,6 +8,7 @@
     "dev": "node tests/server.cjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "redis": "^4.7.1"
   },
   "devDependencies": {

@@ -447,3 +447,5 @@ dialog::backdrop { background: rgba(25, 14, 6, .55); backdrop-filter: blur(3px);
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+.ia-busy { padding: 14px; border-radius: 12px; background: var(--card-2); font-weight: 600; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .55; } }

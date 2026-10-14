@@ -42,6 +42,8 @@ module.exports = handler(async req => {
   };
   if (type === 'fix') {
     entry.bookId = text(data.bookId, 48);
+    entry.originalTitle = text(data.originalTitle, 160);
+    entry.originalAuthor = text(data.originalAuthor, 120);
     if (!/^[a-z0-9-]{1,48}$/.test(entry.bookId)) throw new HttpError(400, 'Libro inválido.');
     if (!data.photo && !entry.title && !entry.author && !entry.note) throw new HttpError(400, 'Sumá una foto o escribí la corrección.');
   } else {

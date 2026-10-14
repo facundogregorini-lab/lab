@@ -38,7 +38,7 @@
     // Libros nuevos: se agregan al final del estante elegido.
     for (const s of shelves) s.items = s.items.filter(i => !(i.id && books[i.id]?.nuevo));
     for (const id of Object.keys(books)) if (books[id].nuevo) delete books[id];
-    for (const b of Object.values(books)) Object.assign(b, base[b.id], { fix: null });
+    for (const b of Object.values(books)) Object.assign(b, base[b.id], { fix: null, aiSummary: null });
     for (const a of state.aportes) {
       if (a.type === 'new') {
         const b = newBook(a);
@@ -51,6 +51,7 @@
         if (a.title) b.t = a.title;
         if (a.author) b.a = a.author;
         if (a.title || a.author) b.q = 1;
+        if (a.ai?.summary && (a.title || a.author)) b.aiSummary = a.id;
       }
     }
     order = [];
@@ -231,10 +232,14 @@
 
   // ---------- Resúmenes (se cargan al abrir cada libro) ----------
   const summaries = {};
+  // Si la IA escribió un resumen para un libro nuevo o corregido, ese manda sobre el archivo.
+  const aiSource = b => b?.nuevo ? (b.aporte.ai?.summary ? b.aporte.id : null) : b?.aiSummary || null;
   function loadSummary(id) {
-    if (books[id]?.nuevo) return Promise.resolve(null);
-    if (summaries[id] !== undefined) return Promise.resolve(summaries[id]);
-    return summaries[id] = fetch('data/resumenes/' + id + '.json').then(r => r.ok ? r.json() : null).catch(() => null).then(j => (summaries[id] = j || false));
+    const b = books[id], ai = aiSource(b), key = ai ? 'ai:' + ai : id;
+    if (!b || (b.nuevo && !ai)) return Promise.resolve(null);
+    if (summaries[key] !== undefined) return Promise.resolve(summaries[key]);
+    const url = ai ? '/api/ia?resumen=' + ai : 'data/resumenes/' + id + '.json';
+    return summaries[key] = fetch(url).then(r => r.ok ? r.json() : null).catch(() => null).then(j => (summaries[key] = j?.corto ? j : false));
   }
   const words = s => String(s || '').trim().split(/\s+/).filter(Boolean).length;
   const minutes = s => Math.max(1, Math.round(words(s) / 200));
@@ -313,10 +318,10 @@
     const who = readers ? Object.entries(STATUS).filter(([k]) => readers[k]?.length).map(([k, s]) => `<p><b>${k === 'quiero' ? 'Lo quieren leer' : k === 'leido' ? 'Lo leyeron' : 'Lo están leyendo'}:</b> ${readers[k].map(esc).join(', ')}</p>`).join('') : '';
     const prev = order[b.index - 1], next = order[b.index + 1];
     const body = $('bookBody'), scroll = body.scrollTop;
-    const loaded = summaries[id], loading = loaded && typeof loaded.then === 'function', data = loaded && !loading ? loaded : null;
+    const ai = aiSource(b), loaded = summaries[ai ? 'ai:' + ai : id], loading = loaded && typeof loaded.then === 'function', data = loaded && !loading ? loaded : null;
     let sum;
-    if (b.nuevo) sum = b.aporte.note ? `<div class="summary">${paragraphs(b.aporte.note)}</div><p class="muted small">Nota de ${by(b.aporte)}. El resumen completo está pendiente.</p>` : `<p class="muted">Este libro lo sumó ${by(b.aporte)}. El resumen todavía está pendiente.</p>`;
-    else if (data?.[state.len]) sum = `<p class="read-time">⏱ ${minutes(data[state.len])} min de lectura · ${words(data[state.len])} palabras</p><div class="summary">${paragraphs(data[state.len])}</div>`;
+    if (b.nuevo && !data) sum = state.iaBusy === b.aporte.id ? '<p class="ia-busy">🤖 La IA está escribiendo el resumen…</p>' : b.aporte.note ? `<div class="summary">${paragraphs(b.aporte.note)}</div><p class="muted small">Nota de ${by(b.aporte)}. El resumen completo está pendiente.</p>` : `<p class="muted">Este libro lo sumó ${by(b.aporte)}. El resumen todavía está pendiente.</p>`;
+    else if (data?.[state.len]) sum = `<p class="read-time">⏱ ${minutes(data[state.len])} min de lectura · ${words(data[state.len])} palabras${ai ? ' · 🤖 escrito por IA' : ''}</p><div class="summary">${paragraphs(data[state.len])}</div>`;
     else if (loading) sum = `<p class="read-time">Cargando resumen…</p><div class="summary">${paragraphs(b.l || b.m || b.r)}</div>`;
     else sum = `<div class="summary">${paragraphs(b.l || b.m || b.r)}</div><p class="muted small">El resumen ampliado de este libro está en preparación.</p>`;
     const fixes = (b.fix || []).slice().reverse();
@@ -333,9 +338,9 @@
           <p class="where">📍 ${where(b)}</p>
           ${b.fam ? '<p class="note fam">✒️ Escrito por un Gregorini: autor de la familia.</p>' : ''}
           ${b.q > 1 ? `<div class="note doubt"><p><b>${b.q === 3 ? 'Identificación dudosa' : 'Identificación probable'}.</b> El lomo no se lee completo en la foto. ¿Lo tenés a mano? Sacale una foto y corregilo.</p><button type="button" class="btn-fix" data-fix>📷 Rectificar con una foto</button></div>` : ''}
-          ${fixes.length ? `<div class="note fixed">${fixes.map(f => `<p>✏️ <b>Corregido por ${by(f)}</b>${f.title || f.author ? `: antes figuraba como «${esc(base[id]?.t)}» de ${esc(base[id]?.a)}` : ''}.${f.note ? ` «${esc(f.note)}»` : ''}${f.photo ? ` <button type="button" class="link" data-show-photo="${f.id}">Ver foto</button>` : ''}${f.by === state.name ? ` · <button type="button" class="link" data-del-aporte="${f.id}">Deshacer</button>` : ''}</p>`).join('')}<div class="fix-photo" id="fixPhoto"></div></div>` : ''}
+          ${fixes.length ? `<div class="note fixed">${fixes.map(f => `<p>✏️ <b>Corregido por ${by(f)}</b>${f.title || f.author ? `: antes figuraba como «${esc(base[id]?.t)}» de ${esc(base[id]?.a)}` : ''}.${f.ai ? ` 🤖 La IA leyó «${esc(f.ai.title)}»${f.ai.author ? ' de ' + esc(f.ai.author) : ''}${f.ai.confident ? '' : ' (no está segura)'}.` : ''}${f.note ? ` «${esc(f.note)}»` : ''}${f.photo ? ` <button type="button" class="link" data-show-photo="${f.id}">Ver foto</button>` : ''}${f.by === state.name ? ` · <button type="button" class="link" data-del-aporte="${f.id}">Deshacer</button>` : ''}</p>`).join('')}<div class="fix-photo" id="fixPhoto"></div></div>` : ''}
           ${b.dup ? `<p class="note">📚 Hay otro ejemplar en la biblioteca: <button type="button" class="link" data-open="${b.dup}">ver dónde está</button>.</p>` : ''}
-          ${b.nuevo ? '' : `<div class="seg seg-small" role="group" aria-label="Resumen">${Object.entries(LEN).map(([k, v]) => `<button type="button" data-len="${k}" aria-pressed="${k === state.len}">${v}<small>${k === 'corto' ? '2 min' : '7 min'}</small></button>`).join('')}</div>`}
+          ${b.nuevo && !data ? '' : `<div class="seg seg-small" role="group" aria-label="Resumen">${Object.entries(LEN).map(([k, v]) => `<button type="button" data-len="${k}" aria-pressed="${k === state.len}">${v}<small>${k === 'corto' ? '2 min' : '7 min'}</small></button>`).join('')}</div>`}
           ${sum}
           <div class="status" role="group" aria-label="Tu lectura">${Object.entries(STATUS).map(([k, s]) => `<button type="button" class="st st-btn-${k}" data-mark="${k}" aria-pressed="${mark === k}"><span>${s.icon}</span> ${s.label}</button>`).join('')}</div>
           <p class="muted small">${state.token ? `Marcando como <b>${esc(state.name)}</b>.` : 'Tus marcas se guardan en este navegador. <button type="button" class="link" data-login>Entrá</button> para tenerlas en todos lados.'}</p>
@@ -582,6 +587,26 @@
     });
   }
 
+  async function runIA(id) {
+    state.iaBusy = id;
+    toast('🤖 La IA está leyendo el libro y escribiendo el resumen…');
+    if (dialog.open) renderBook(state.current, true);
+    try {
+      const { aporte } = await api('ia', { id });
+      state.aportes = state.aportes.map(a => a.id === id ? aporte : a);
+      for (const k of Object.keys(summaries)) if (k === 'ai:' + id) delete summaries[k];
+      state.iaBusy = null;
+      rebuild();
+      const target = aporte.type === 'new' ? 'n-' + aporte.id : aporte.bookId;
+      if (dialog.open && state.current === target) openBook(target, false);
+      toast(aporte.ai.confident ? `🤖 Listo: «${aporte.ai.title}». Resumen escrito.` : '🤖 Resumen escrito. La IA no está del todo segura de qué libro es: revisalo.');
+    } catch (e) {
+      state.iaBusy = null;
+      if (dialog.open) renderBook(state.current, true);
+      toast('La IA no pudo completar el libro: ' + e.message);
+    }
+  }
+
   const formDialog = $('formDialog');
   let formPhoto = null;
   function openForm(type, bookId) {
@@ -597,8 +622,8 @@
       <div class="sheet-bar"><button type="button" class="close" data-close-form aria-label="Cerrar">×</button><span class="grab" aria-hidden="true"></span></div>
       <h2>${type === 'fix' ? '📷 Rectificar libro' : '＋ Nuevo libro'}</h2>
       <p class="muted">${type === 'fix'
-        ? `Si el lomo se leyó mal, sacale una foto al libro (lomo o tapa) y corregí lo que haga falta. Ahora figura como <b>«${esc(b.t)}»</b> de ${esc(b.a)}.`
-        : 'Sumá un libro que llegó a la biblioteca. Con una foto de la tapa o del lomo, el lomo se pinta de su color.'}</p>
+        ? `Si el lomo se leyó mal, sacale una foto al libro (lomo o tapa)${state.ia ? ': la IA la lee y corrige título, autor y resumen sola' : ' y corregí lo que haga falta'}. Ahora figura como <b>«${esc(b.t)}»</b> de ${esc(b.a)}.`
+        : `Sumá un libro que llegó a la biblioteca. Con una foto de la tapa o del lomo, el lomo se pinta de su color${state.ia ? ' y la IA escribe el resumen' : ''}.`}</p>
       <div class="photo-pick">
         <div class="photo-preview" id="photoPreview"><span>${type === 'fix' ? 'Foto del lomo o la tapa' : 'Foto de la tapa'}</span></div>
         <div class="photo-btns">
@@ -652,9 +677,12 @@
     if (type === 'fix') {
       const b = books[bookId];
       payload.bookId = bookId;
+      payload.originalTitle = b.t;
+      payload.originalAuthor = b.a;
       if (val('title') && val('title') !== b.t) payload.title = val('title');
       if (val('author') && val('author') !== b.a) payload.author = val('author');
       if (!formPhoto && !payload.title && !payload.author && !payload.note) return $('formError').textContent = 'Sacá una foto o cambiá el título, el autor o el comentario.';
+      // Con IA y una foto nueva, si nadie tocó los datos, que la IA decida.
     } else {
       if (!val('title')) return $('formError').textContent = 'Falta el título.';
       Object.assign(payload, { title: val('title'), author: val('author'), category: val('category'), year: /^-?\d{1,4}$/.test(val('year')) ? Number(val('year')) : null,
@@ -674,6 +702,7 @@
       state.aportes.push(aporte);
       formDialog.close();
       rebuild();
+      if (state.ia && state.server !== false && (aporte.photo || type === 'new')) runIA(aporte.id);
       if (type === 'new') {
         const id = 'n-' + aporte.id;
         if (f.elements.read?.checked) setMark(id, 'leido');
@@ -807,6 +836,7 @@
   fromHash();
   addEventListener('hashchange', fromHash);
   if (document.fonts) document.fonts.ready.then(layout);
+  api('ia').then(r => { state.ia = Boolean(r.enabled); }).catch(() => { state.ia = false; });
   loadAportes().then(() => { if (location.hash.startsWith('#libro/n-')) fromHash(); });
   if (state.token) api('biblioteca').then(r => {
     state.marks = { ...state.marks, ...r.marks }; state.shared = r; state.server = true;

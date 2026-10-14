@@ -3,6 +3,7 @@ const assert = require('node:assert/strict'), path = require('node:path'), fs = 
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..');
 const shots = path.join(root, 'test-results'); fs.mkdirSync(shots, { recursive: true });
+process.env.BIBLIO_IA_FAKE = '1'; // IA simulada: no gasta tokens
 const server = require('./server.cjs').createServer();
 const check = (name, ok) => { assert.ok(ok, name); console.log('PASS', name); };
 const URL = 'http://127.0.0.1:4179/biblioteca-el-regreso/';
@@ -80,6 +81,8 @@ const URL = 'http://127.0.0.1:4179/biblioteca-el-regreso/';
     await page.click('#aporteForm [type=submit]');
     await page.waitForFunction(() => document.getElementById('bookTitle')?.textContent === 'Operación Masacre');
     check('New book lands on the chosen shelf', await page.locator('.case[data-case="B"] [data-shelf="B5"] .book.is-new').count() === 1);
+    await page.waitForFunction(() => document.querySelector('#bookDialog .read-time')?.textContent.includes('IA'));
+    check('AI writes the summary of a new book', (await page.textContent('#bookDialog .summary')).includes('Resumen de prueba'));
     await page.keyboard.press('Escape');
     const fresh = await browser.newPage();
     await fresh.goto(URL + '#B');
