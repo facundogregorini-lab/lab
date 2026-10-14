@@ -21,3 +21,7 @@ Cada archivo de `data/` es un estante, en orden (`a1.js` es el de arriba de la B
 ## Pruebas
 
 `node tests/biblioteca.cjs` (incluido en `npm test`) levanta el sitio con la API en memoria y prueba lomos, vista previa, ficha, marcas, búsqueda, categorías, estadísticas, cuenta y celular.
+
+## Entrada y sala
+
+Al abrir la página (sin un link a un libro) aparece una entrada a pantalla completa. Si existe `assets/video/entrada.mp4` (o `.webm`), se reproduce en loop y sin sonido, con un botón para activarlo; si no, hace un recorrido lento por las fotos reales. "Entrar a la biblioteca" lleva a **la sala**, con las dos bibliotecas; al tocar una, la cámara se acerca hasta ella. La entrada se muestra una vez por sesión.

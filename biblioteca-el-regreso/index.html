@@ -17,6 +17,24 @@
 <body>
 <a class="skip" href="#main">Saltar a la biblioteca</a>
 
+<div class="intro" id="intro" hidden>
+  <div class="intro-media" id="introMedia" aria-hidden="true">
+    <div class="kb kb1" style="background-image:url(assets/fotos/foto-01.webp)"></div>
+    <div class="kb kb2" style="background-image:url(assets/fotos/foto-02.webp)"></div>
+    <div class="kb kb3" style="background-image:url(assets/fotos/foto-08.webp)"></div>
+    <div class="kb kb4" style="background-image:url(assets/fotos/foto-10.webp)"></div>
+  </div>
+  <div class="intro-shade"></div>
+  <div class="intro-text">
+    <p class="intro-kicker">Campo El Regreso</p>
+    <h2>La biblioteca</h2>
+    <p class="intro-sub">Dos muebles de roble, cientos de libros y las historias de la familia.</p>
+    <button type="button" class="intro-enter" id="introEnter">Entrar a la biblioteca</button>
+  </div>
+  <button type="button" class="intro-skip" id="introSkip">Saltar ›</button>
+  <button type="button" class="intro-sound" id="introSound" hidden aria-label="Activar sonido">🔇</button>
+</div>
+
 <header class="top">
   <div class="brand">
     <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="10" width="7" height="30" rx="1" fill="#a33b2b"/><rect x="14" y="7" width="6" height="33" rx="1" fill="#2f5f8a"/><rect x="21" y="12" width="8" height="28" rx="1" fill="#d9a441"/><rect x="31" y="9" width="6" height="31" rx="1" transform="rotate(10 34 40)" fill="#3f6b3a"/><rect x="3" y="40" width="42" height="3" rx="1" fill="#c69a6a"/></svg>
@@ -34,6 +52,7 @@
 </header>
 
 <nav class="tabs" aria-label="Vistas">
+  <button type="button" class="tab" data-view="room" aria-pressed="false">La sala</button>
   <button type="button" class="tab" data-view="A" aria-pressed="true">Biblioteca I <small>Clásicos</small></button>
   <button type="button" class="tab" data-view="B" aria-pressed="false">Biblioteca II <small>Historia</small></button>
   <button type="button" class="tab" data-view="catalog" aria-pressed="false">Catálogo</button>
@@ -56,7 +75,17 @@
 <div class="chips" id="chips" role="group" aria-label="Categorías"></div>
 
 <main id="main">
+  <section class="view sala" id="viewRoom" aria-label="La sala" hidden>
+    <div class="sala-stage" id="salaStage">
+      <div class="sala-wall"></div>
+      <div class="sala-light"></div>
+      <div class="sala-cases" id="salaCases"></div>
+      <div class="sala-floor"></div>
+    </div>
+    <p class="sala-hint">Tocá una biblioteca para acercarte.</p>
+  </section>
   <section class="view room" id="viewShelves" aria-label="Biblioteca">
+    <button type="button" class="back-sala" data-view="room">← La sala</button>
     <div class="case-switch" role="group" aria-label="Elegir biblioteca">
       <button type="button" data-view="A" aria-pressed="true">Biblioteca I · Clásicos</button>
       <button type="button" data-view="B" aria-pressed="false">Biblioteca II · Historia</button>
@@ -80,11 +109,11 @@
 </main>
 
 <nav class="bottom-nav" aria-label="Navegación">
-  <button type="button" data-view="shelves" aria-pressed="true"><span aria-hidden="true">📚</span>Estantes</button>
-  <button type="button" data-view="catalog" aria-pressed="false"><span aria-hidden="true">☰</span>Catálogo</button>
+  <button type="button" data-view="room" aria-pressed="true"><span aria-hidden="true">🏛️</span>Sala</button>
+  <button type="button" data-view="shelves" aria-pressed="false"><span aria-hidden="true">📚</span>Estantes</button>
   <button type="button" class="nav-new" data-new-book><span aria-hidden="true">＋</span>Nuevo</button>
+  <button type="button" data-view="catalog" aria-pressed="false"><span aria-hidden="true">☰</span>Catálogo</button>
   <button type="button" data-view="stats" aria-pressed="false"><span aria-hidden="true">📊</span>Datos</button>
-  <button type="button" data-view="photos" aria-pressed="false"><span aria-hidden="true">🖼️</span>Fotos</button>
 </nav>
 
 <div class="peek" id="peek" role="tooltip" hidden></div>

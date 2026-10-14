@@ -134,6 +134,98 @@
     scroller.innerHTML = '';
     for (const bc of bookcases) { caseEls[bc.id] = buildBookcase(bc); scroller.appendChild(caseEls[bc.id]); }
     for (const [id, el] of Object.entries(caseEls)) el.hidden = id !== state.view;
+    buildSala();
+  }
+
+  // ---------- La sala: las dos bibliotecas juntas; al tocar una, la cámara se acerca ----------
+  const DECOR_W = { thinker: 158, bookend: 72, bastet: 0, horse: 0, bull: 0 };
+  function designWidth(bcId) {
+    return Math.max(...shelves.filter(s => s.bookcase === bcId).map(s => s.items.reduce((w, i) =>
+      w + (i.decor ? (i.front != null ? 0 : DECOR_W[i.decor] || 0) : (books[i.id].s[3] + .6)), 0))) + 30;
+  }
+  function buildSala() {
+    const host = $('salaCases');
+    host.innerHTML = '';
+    for (const bc of bookcases) {
+      const wrap = document.createElement('button');
+      wrap.type = 'button';
+      wrap.className = 'sala-case';
+      wrap.dataset.zoom = bc.id;
+      wrap.setAttribute('aria-label', `${bc.name}: ${bc.subtitle}. Acercarse`);
+      const mini = buildBookcase(bc);
+      mini.classList.add('mini-case');
+      mini.setAttribute('aria-hidden', 'true');
+      mini.querySelectorAll('button').forEach(b => b.tabIndex = -1);
+      wrap.appendChild(mini);
+      wrap.insertAdjacentHTML('beforeend', `<span class="sala-label"><b>${esc(bc.name)}</b><span>${esc(bc.subtitle)} · </span>${order.filter(b => b.bookcase === bc.id).length} libros</span>`);
+      host.appendChild(wrap);
+    }
+    refreshMarksIn(host);
+    layoutSala();
+  }
+  function layoutSala() {
+    const stage = $('salaStage');
+    if (!stage || $('viewRoom').hidden) return;
+    const minis = [...stage.querySelectorAll('.mini-case')];
+    const widths = minis.map(m => designWidth(m.dataset.case));
+    // En el celular van una debajo de la otra, a todo el ancho; en la compu, lado a lado.
+    const availW = stage.clientWidth - (mobile() ? 30 : 210);
+    const availH = Math.max(260, innerHeight * .62);
+    const totalW = mobile() ? Math.max(...widths) + 128 : widths.reduce((a, w) => a + w + 128, 0);
+    const u = Math.min(availW / totalW, mobile() ? 1 : availH / 1760, .5);
+    minis.forEach((m, i) => { m.style.setProperty('--u', u.toFixed(4)); m.style.setProperty('--inner', Math.ceil(widths[i]) + 'px'); });
+  }
+  addEventListener('resize', () => requestAnimationFrame(layoutSala));
+  function zoomInto(bcId) {
+    const stage = $('salaStage'), target = stage.querySelector(`[data-zoom="${bcId}"] .mini-case`);
+    if (!target || matchMedia('(prefers-reduced-motion: reduce)').matches) return setView(bcId);
+    const r = target.getBoundingClientRect(), s = stage.getBoundingClientRect();
+    const scale = Math.min(innerWidth / r.width, innerHeight / r.height) * 1.15;
+    const ox = r.left + r.width / 2 - s.left, oy = r.top + r.height * .45 - s.top;
+    stage.style.transformOrigin = `${ox}px ${oy}px`;
+    stage.classList.add('zooming');
+    stage.style.transform = `scale(${scale})`;
+    setTimeout(() => {
+      setView(bcId);
+      scrollTo({ top: Math.max(0, $('viewShelves').offsetTop - 8) });
+      stage.classList.remove('zooming');
+      stage.style.transform = '';
+      const el = caseEls[bcId];
+      el.classList.add('arrive');
+      setTimeout(() => el.classList.remove('arrive'), 900);
+    }, 1000);
+  }
+  $('salaCases').addEventListener('click', e => { const c = e.target.closest('[data-zoom]'); if (c) zoomInto(c.dataset.zoom); });
+
+  // ---------- Entrada: video del lugar (o recorrido por las fotos) ----------
+  function showIntro() {
+    const intro = $('intro');
+    let seen = false;
+    try { seen = sessionStorage.getItem('biblio:intro') === '1'; } catch {}
+    if (seen || location.hash || navigator.webdriver) return;
+    intro.hidden = false;
+    document.body.classList.add('intro-on');
+    // Si existe assets/video/entrada.mp4, se usa el video; si no, quedan las fotos en movimiento.
+    const video = document.createElement('video');
+    Object.assign(video, { muted: true, autoplay: true, loop: true, playsInline: true, preload: 'auto' });
+    video.setAttribute('playsinline', '');
+    video.poster = 'assets/fotos/foto-01.webp';
+    video.className = 'intro-video';
+    video.innerHTML = '<source src="assets/video/entrada.webm" type="video/webm"><source src="assets/video/entrada.mp4" type="video/mp4">';
+    video.addEventListener('loadeddata', () => { $('introMedia').appendChild(video); $('introMedia').classList.add('has-video'); $('introSound').hidden = false; }, { once: true });
+    video.load();
+    $('introSound').onclick = () => { video.muted = !video.muted; $('introSound').textContent = video.muted ? '🔇' : '🔊'; };
+    const close = () => {
+      try { sessionStorage.setItem('biblio:intro', '1'); } catch {}
+      intro.classList.add('leaving');
+      document.body.classList.remove('intro-on');
+      setTimeout(() => { intro.hidden = true; video.pause(); }, 900);
+      setView('room');
+    };
+    $('introEnter').onclick = close;
+    $('introSkip').onclick = close;
+    addEventListener('keydown', function esc(e) { if (e.key === 'Escape' && !intro.hidden) { close(); removeEventListener('keydown', esc); } });
+    $('introEnter').focus();
   }
   const bookEl = id => scroller.querySelector(`.book[data-id="${id}"]`);
 
@@ -163,9 +255,9 @@
   addEventListener('resize', () => requestAnimationFrame(layout));
 
   // ---------- Vistas ----------
-  const views = { A: 'viewShelves', B: 'viewShelves', catalog: 'viewCatalog', stats: 'viewStats', photos: 'viewPhotos' };
+  const views = { room: 'viewRoom', A: 'viewShelves', B: 'viewShelves', catalog: 'viewCatalog', stats: 'viewStats', photos: 'viewPhotos' };
   function setView(view, push = true) {
-    if (!views[view]) view = 'A';
+    if (!views[view]) view = 'room';
     state.view = view;
     for (const t of document.querySelectorAll('[data-view]')) t.setAttribute('aria-pressed', t.dataset.view === view || (t.dataset.view === 'shelves' && (view === 'A' || view === 'B')));
     for (const id of new Set(Object.values(views))) $(id).hidden = id !== views[view];
@@ -175,6 +267,7 @@
     if (view === 'catalog') renderCatalog();
     if (view === 'stats') renderStats();
     if (view === 'photos') renderPhotos();
+    if (view === 'room') layoutSala();
     hidePeek();
     if (push && location.hash !== '#' + view) history.replaceState(null, '', '#' + view);
     applyFilters();
@@ -182,6 +275,7 @@
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-view]');
     if (!t || t.closest('dialog')) return;
+    if (state.view === 'room' && (t.dataset.view === 'A' || t.dataset.view === 'B')) return zoomInto(t.dataset.view);
     setView(t.dataset.view === 'shelves' ? state.lastCase || 'A' : t.dataset.view);
     if (mobile()) scrollTo({ top: 0 });
   });
@@ -441,13 +535,16 @@
     if (status === 'leido') toast(`¡Uno más! Llevás ${countRead()} leídos.`);
   }
   const countRead = () => Object.keys(state.marks).filter(id => state.marks[id] === 'leido' && books[id]).length;
-  function refreshMarks() {
-    for (const b of order) {
-      const el = bookEl(b.id), m = state.marks[b.id];
-      if (!el) continue;
+  function refreshMarksIn(root) {
+    for (const el of root.querySelectorAll('.book')) {
+      const m = state.marks[el.dataset.id];
       el.classList.remove('m-leido', 'm-leyendo', 'm-quiero');
       if (m) el.classList.add('m-' + m);
     }
+  }
+  function refreshMarks() {
+    refreshMarksIn(scroller);
+    if ($('salaCases')) refreshMarksIn($('salaCases'));
     const read = countRead(), pct = Math.round(read / order.length * 100);
     $('totalBooks').textContent = order.length;
     $('readCount').textContent = `${read} ${read === 1 ? 'leído' : 'leídos'}${state.token ? ' por ' + state.name : ''}`;
@@ -979,9 +1076,9 @@
   // ---------- Inicio ----------
   function fromHash() {
     const h = decodeURIComponent(location.hash.slice(1));
-    if (h === 'nuevo') { setView('A', false); return openForm('new'); }
+    if (h === 'nuevo') { setView('room', false); return openForm('new'); }
     if (h.startsWith('libro/') && books[h.slice(6)]) { const b = books[h.slice(6)]; setView(b.bookcase, false); openBook(b.id, false); }
-    else setView(views[h] ? h : 'A', false);
+    else setView(views[h] ? h : 'room', false);
   }
   indexBooks();
   buildCases();
@@ -989,6 +1086,7 @@
   renderAccount();
   refreshMarks();
   fromHash();
+  showIntro();
   addEventListener('hashchange', fromHash);
   if (document.fonts) document.fonts.ready.then(layout);
   api('ia').then(r => { state.ia = Boolean(r.enabled); }).catch(() => { state.ia = false; });
