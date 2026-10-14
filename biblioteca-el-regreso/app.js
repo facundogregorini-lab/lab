@@ -1,4 +1,4 @@
-// Biblioteca El Regreso: arma las bibliotecas a partir de data/*.js y maneja filtros, fichas y lecturas.
+// Biblioteca El Regreso: arma las bibliotecas a partir de data/*.js y maneja filtros, fichas, lecturas y aportes.
 (function () {
   const { books, shelves, categories, bookcases } = BIBLIO;
   const $ = id => document.getElementById(id);
@@ -6,7 +6,7 @@
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const store = {
     get(key, fallback) { try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
-    set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} },
+    set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } },
     del(key) { try { localStorage.removeItem(key); } catch {} },
   };
 
@@ -15,27 +15,69 @@
     leyendo: { label: 'Leyendo', icon: '◐' },
     quiero: { label: 'Quiero leerlo', icon: '★' },
   };
-  const LEN = { r: 'Corto', m: 'Medio', l: 'Largo' };
+  const LEN = { corto: 'Resumen corto', largo: 'Resumen' };
   const touch = matchMedia('(hover: none)').matches;
+  const mobile = () => innerWidth <= 720;
 
-  // Orden físico de los libros y posición de cada uno.
-  const order = [];
-  for (const shelf of shelves) {
-    let place = 0;
-    for (const item of shelf.items) if (item.id) { const b = books[item.id]; b.place = ++place; b.index = order.length; order.push(b); }
-  }
-  for (const b of order) { b.search = fold([b.t, b.a, categories[b.c]?.name, b.y].join(' ')); }
+  // Libros originales, antes de aplicar correcciones de la familia.
+  const base = {};
+  for (const b of Object.values(books)) base[b.id] = { t: b.t, a: b.a, q: b.q };
 
   const state = {
-    view: 'A', len: store.get('biblio:len', 'r'), q: '', cat: '', status: '',
+    view: 'A', len: store.get('biblio:len2', 'corto'), q: '', cat: '', status: '',
     token: store.get('biblio:token', null), name: store.get('biblio:name', null),
-    marks: {}, shared: null, server: null, current: null,
+    marks: {}, shared: null, server: null, current: null, aportes: [],
   };
+  if (!LEN[state.len]) state.len = 'corto';
   const marksKey = () => 'biblio:marks:' + (state.token ? state.name : 'local');
   state.marks = store.get(marksKey(), {});
 
+  // ---------- Índice: orden físico, aportes y búsqueda ----------
+  let order = [];
+  function indexBooks() {
+    // Libros nuevos: se agregan al final del estante elegido.
+    for (const s of shelves) s.items = s.items.filter(i => !(i.id && books[i.id]?.nuevo));
+    for (const id of Object.keys(books)) if (books[id].nuevo) delete books[id];
+    for (const b of Object.values(books)) Object.assign(b, base[b.id], { fix: null });
+    for (const a of state.aportes) {
+      if (a.type === 'new') {
+        const b = newBook(a);
+        books[b.id] = b;
+        const shelf = shelves.find(s => s.bookcase === b.bookcase && s.n === b.shelf) || shelves[0];
+        shelf.items.push({ id: b.id });
+      } else if (books[a.bookId]) {
+        const b = books[a.bookId];
+        b.fix = [...(b.fix || []), a];
+        if (a.title) b.t = a.title;
+        if (a.author) b.a = a.author;
+        if (a.title || a.author) b.q = 1;
+      }
+    }
+    order = [];
+    for (const shelf of shelves) {
+      let place = 0;
+      for (const item of shelf.items) if (item.id) { const b = books[item.id]; b.place = ++place; b.index = order.length; order.push(b); }
+    }
+    for (const b of order) b.search = fold([b.t, b.a, base[b.id]?.t, categories[b.c]?.name, b.y].join(' '));
+  }
+  function newBook(a) {
+    const color = a.color || shade(categories[a.category]?.color || '#8a6d4a', -.25);
+    return {
+      id: 'n-' + a.id, t: a.title, a: a.author || 'Autor por completar', c: a.category, y: a.year, q: 1,
+      s: [color, luminance(color) > .55 ? '#1d1d1d' : '#f6efe2', .9, 26, 'band', luminance(color) > .55 ? '#1d1d1d' : '#f6efe2', 'serif'],
+      r: a.note ? a.note.slice(0, 140) : 'Libro sumado a la biblioteca por ' + a.by + '.',
+      nuevo: true, aporte: a, bookcase: a.bookcase, shelf: a.shelf,
+    };
+  }
+  function shade(hex, f) {
+    const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(f < 0 ? v * (1 + f) : v + (255 - v) * f));
+    return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+  function luminance(hex) { const n = parseInt(hex.slice(1), 16); return (.299 * (n >> 16) + .587 * ((n >> 8) & 255) + .114 * (n & 255)) / 255; }
+
   // ---------- Bibliotecas ----------
   const caseEls = {};
+  const scroller = $('caseScroll');
   function buildBookcase(bc) {
     const el = document.createElement('div');
     el.className = 'case';
@@ -52,47 +94,47 @@
       <p class="case-label">${esc(bc.name)} · <span>${esc(bc.subtitle)}</span></p>`;
     return el;
   }
-
   function shelfHtml(shelf) {
     const items = shelf.items.map(item => item.decor
       ? `<div class="decor decor-${item.decor}${item.front != null ? ' front" style="left:' + item.front * 100 + '%' : ''}" aria-hidden="true">${DECOR.decor[item.decor] || ''}</div>`
       : spineHtml(books[item.id])).join('');
     return `<div class="shelf" data-shelf="${shelf.bookcase}${shelf.n}"><div class="row">${items}</div></div>`;
   }
-
   function spineHtml(b) {
     const [bg, fg, h, w, style = 'plain', ac = '#000', font = 'serif'] = b.s;
     const narrow = w < 17;
     const author = b.a.split(/\s*[,·&]\s*|\s+y\s+/)[0];
-    return `<button type="button" class="book bg st-${style} f-${font}${w >= 40 ? ' wide' : ''}" data-id="${b.id}" style="--bg:${bg};--fg:${fg};--ac:${ac};--h:${h};--w:${w}" aria-label="${esc(b.t)}, de ${esc(b.a)}">
+    return `<button type="button" class="book bg st-${style} f-${font}${w >= 40 ? ' wide' : ''}${b.nuevo ? ' is-new' : ''}" data-id="${b.id}" style="--bg:${bg};--fg:${fg};--ac:${ac};--h:${h};--w:${w}" aria-label="${esc(b.t)}, de ${esc(b.a)}">
       <span class="sp-text">${narrow ? '' : `<span class="sp-a">${esc(author)}</span>`}<span class="sp-t">${esc(b.t)}</span></span>
       ${w >= 16 ? '<span class="sp-mark"></span>' : ''}<span class="ribbon"></span></button>`;
   }
-
-  const scroller = $('caseScroll');
-  for (const bc of bookcases) { caseEls[bc.id] = buildBookcase(bc); scroller.appendChild(caseEls[bc.id]); }
+  function buildCases() {
+    scroller.innerHTML = '';
+    for (const bc of bookcases) { caseEls[bc.id] = buildBookcase(bc); scroller.appendChild(caseEls[bc.id]); }
+    for (const [id, el] of Object.entries(caseEls)) el.hidden = id !== state.view;
+  }
   const bookEl = id => scroller.querySelector(`.book[data-id="${id}"]`);
 
   // Escala: los lomos se miden en píxeles de diseño; --u los ajusta al ancho disponible.
   function layout() {
     const el = caseEls[state.view];
-    if (!el) return;
+    if (!el || el.hidden) return;
     el.style.setProperty('--u', 1);
     const rows = [...el.querySelectorAll('.row')];
-    const need = Math.max(...rows.map(r => [...r.children].reduce((sum, c) => sum + c.getBoundingClientRect().width, 0)));
+    const need = Math.max(...rows.map(r => [...r.children].reduce((sum, c) => sum + (c.classList.contains('front') ? 0 : c.getBoundingClientRect().width), 0)));
     const design = need + 26 + 2 * 46 + 20;
     const avail = scroller.clientWidth - 8;
     let u = Math.min(1.12, avail / design);
-    const small = u < .6;
-    if (small) u = .6;
+    const min = mobile() ? .72 : .6, small = u < min;
+    if (small) u = min;
     el.style.setProperty('--u', u.toFixed(4));
     el.style.setProperty('--inner', Math.ceil(need + 26) + 'px');
     scroller.classList.toggle('pan', small);
     // Si sobra lugar al final de un estante, el último libro se apoya inclinado.
     for (const r of rows) {
-      const last = r.lastElementChild;
       r.querySelectorAll('.lean').forEach(b => b.classList.remove('lean'));
-      const used = [...r.children].reduce((s, c) => s + c.getBoundingClientRect().width, 0) / u;
+      const books = [...r.children].filter(c => !c.classList.contains('front')), last = books[books.length - 1];
+      const used = books.reduce((s, c) => s + c.getBoundingClientRect().width, 0) / u;
       if (last && last.classList.contains('book') && need - used > 70) last.classList.add('lean');
     }
   }
@@ -103,11 +145,11 @@
   function setView(view, push = true) {
     if (!views[view]) view = 'A';
     state.view = view;
-    for (const t of document.querySelectorAll('.tab')) t.setAttribute('aria-pressed', t.dataset.view === view);
+    for (const t of document.querySelectorAll('[data-view]')) t.setAttribute('aria-pressed', t.dataset.view === view || (t.dataset.view === 'shelves' && (view === 'A' || view === 'B')));
     for (const id of new Set(Object.values(views))) $(id).hidden = id !== views[view];
     for (const [id, el] of Object.entries(caseEls)) el.hidden = id !== view;
     document.body.dataset.view = view;
-    if (view === 'A' || view === 'B') { layout(); scroller.scrollLeft = 0; }
+    if (view === 'A' || view === 'B') { state.lastCase = view; layout(); scroller.scrollLeft = 0; }
     if (view === 'catalog') renderCatalog();
     if (view === 'stats') renderStats();
     if (view === 'photos') renderPhotos();
@@ -115,18 +157,23 @@
     if (push && location.hash !== '#' + view) history.replaceState(null, '', '#' + view);
     applyFilters();
   }
-  document.querySelector('.tabs').addEventListener('click', e => { const t = e.target.closest('.tab'); if (t) setView(t.dataset.view); });
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-view]');
+    if (!t || t.closest('dialog')) return;
+    setView(t.dataset.view === 'shelves' ? state.lastCase || 'A' : t.dataset.view);
+    if (mobile()) scrollTo({ top: 0 });
+  });
+  document.addEventListener('click', e => { if (e.target.closest('[data-new-book]')) openForm('new'); });
 
   // ---------- Filtros ----------
   function matches(b) {
     if (state.cat && b.c !== state.cat) return false;
     const m = state.marks[b.id];
-    if (state.status === 'no' ? m === 'leido' : state.status && m !== state.status) return false;
+    if (state.status === 'dudas' ? b.q < 2 : state.status === 'no' ? m === 'leido' : state.status && m !== state.status) return false;
     if (state.q) return fold(state.q).split(/\s+/).every(word => b.search.includes(word));
     return true;
   }
   const filtering = () => Boolean(state.q || state.cat || state.status);
-
   function applyFilters() {
     const active = filtering();
     const hits = { A: 0, B: 0 };
@@ -134,11 +181,12 @@
       const ok = matches(b);
       if (ok) hits[b.bookcase]++;
       const el = bookEl(b.id);
+      if (!el) continue;
       el.classList.toggle('dim', active && !ok);
       el.classList.toggle('hit', active && ok);
     }
     const hint = $('shelfHint');
-    if (!active) hint.textContent = touch ? 'Tocá un lomo para abrir el libro. Deslizá para recorrer los estantes.' : 'Pasá el mouse por un lomo para ver de qué se trata. Hacé clic para abrirlo.';
+    if (!active) hint.textContent = touch ? 'Tocá un lomo para abrir el libro. Deslizá de costado para recorrer los estantes.' : 'Pasá el mouse por un lomo para ver de qué se trata. Hacé clic para abrirlo.';
     else {
       const here = hits[state.view] ?? 0, other = state.view === 'A' ? 'B' : 'A';
       hint.innerHTML = `${here === 1 ? '1 libro coincide' : here + ' libros coinciden'} en esta biblioteca.` +
@@ -157,13 +205,12 @@
     $('search').value = ''; $('statusFilter').value = '';
     applyFilters();
   }
-
   function renderChips() {
     const counts = {};
     for (const b of order) counts[b.c] = (counts[b.c] || 0) + 1;
-    $('chips').innerHTML = `<button type="button" class="chip" data-cat="" aria-pressed="true">Todas <b>${order.length}</b></button>` +
+    $('chips').innerHTML = `<button type="button" class="chip" data-cat="" aria-pressed="${!state.cat}">Todas <b>${order.length}</b></button>` +
       Object.entries(categories).filter(([id]) => counts[id]).map(([id, c]) =>
-        `<button type="button" class="chip" data-cat="${id}" style="--cc:${c.color}" aria-pressed="false"><span>${c.icon}</span> ${esc(c.name)} <b>${counts[id]}</b></button>`).join('');
+        `<button type="button" class="chip" data-cat="${id}" style="--cc:${c.color}" aria-pressed="${state.cat === id}"><span>${c.icon}</span> ${esc(c.name)} <b>${counts[id]}</b></button>`).join('');
   }
   $('chips').addEventListener('click', e => {
     const chip = e.target.closest('.chip');
@@ -182,13 +229,16 @@
     if (e.key === '/' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName) && !document.querySelector('dialog[open]')) { e.preventDefault(); $('search').focus(); }
   });
 
-  function setLen(len) {
-    state.len = LEN[len] ? len : 'r';
-    store.set('biblio:len', state.len);
-    for (const b of document.querySelectorAll('[data-len]')) b.setAttribute('aria-pressed', b.dataset.len === state.len);
-    if (state.current && $('bookDialog').open) renderBook(state.current, true);
+  // ---------- Resúmenes (se cargan al abrir cada libro) ----------
+  const summaries = {};
+  function loadSummary(id) {
+    if (books[id]?.nuevo) return Promise.resolve(null);
+    if (summaries[id] !== undefined) return Promise.resolve(summaries[id]);
+    return summaries[id] = fetch('data/resumenes/' + id + '.json').then(r => r.ok ? r.json() : null).catch(() => null).then(j => (summaries[id] = j || false));
   }
-  document.addEventListener('click', e => { const b = e.target.closest('[data-len]'); if (b) setLen(b.dataset.len); });
+  const words = s => String(s || '').trim().split(/\s+/).filter(Boolean).length;
+  const minutes = s => Math.max(1, Math.round(words(s) / 200));
+  const paragraphs = s => String(s || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join('');
 
   // ---------- Vista previa al pasar el mouse ----------
   const peek = $('peek');
@@ -196,13 +246,14 @@
   function showPeek(el) {
     const b = books[el.dataset.id];
     clearTimeout(peekTimer);
+    loadSummary(b.id);
     peekTimer = setTimeout(() => {
       peekId = b.id;
       const cat = categories[b.c], mark = state.marks[b.id];
       peek.innerHTML = `<p class="peek-cat" style="--cc:${cat.color}">${cat.icon} ${esc(cat.name)}</p>
         <h3>${esc(b.t)}</h3><p class="peek-by">${esc(b.a)}${b.y ? ' · ' + year(b.y) : ''}</p>
-        <p class="peek-sum">${esc(b[state.len])}</p>
-        <p class="peek-foot">${mark ? `<span class="pill pill-${mark}">${STATUS[mark].icon} ${STATUS[mark].label}</span>` : ''}${b.fam ? '<span class="pill pill-fam">Autor de la familia</span>' : ''}<span class="peek-more">Clic para abrir · resumen ${LEN[state.len].toLowerCase()}</span></p>`;
+        <p class="peek-sum">${esc(b.r)}</p>
+        <p class="peek-foot">${mark ? `<span class="pill pill-${mark}">${STATUS[mark].icon} ${STATUS[mark].label}</span>` : ''}${b.fam ? '<span class="pill pill-fam">Autor de la familia</span>' : ''}${b.nuevo ? '<span class="pill pill-new">Nuevo</span>' : ''}${b.q > 1 ? '<span class="pill pill-doubt">Por confirmar</span>' : ''}<span class="peek-more">Clic para leer el resumen</span></p>`;
       peek.hidden = false;
       const r = el.getBoundingClientRect(), p = peek.getBoundingClientRect();
       let x = r.left + r.width / 2 - p.width / 2;
@@ -221,8 +272,6 @@
   scroller.addEventListener('scroll', hidePeek, { passive: true });
   addEventListener('scroll', hidePeek, { passive: true });
   scroller.addEventListener('click', e => { const el = e.target.closest('.book'); if (el) { hidePeek(); openBook(el.dataset.id); } });
-
-  // Flechas: moverse entre lomos y estantes.
   scroller.addEventListener('keydown', e => {
     const el = e.target.closest('.book');
     if (!el || !/Arrow/.test(e.key)) return;
@@ -243,6 +292,7 @@
   const dialog = $('bookDialog');
   function year(y) { return y < 0 ? `c. ${-y} a. C.` : String(y); }
   function where(b) { return `${b.bookcase === 'A' ? 'Biblioteca I' : 'Biblioteca II'} · estante ${b.shelf} · ${b.place}.º desde la izquierda`; }
+  const by = a => `${esc(a.by)}, ${new Date(a.date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}`;
 
   function openBook(id, push = true) {
     const b = books[id];
@@ -250,64 +300,85 @@
     state.current = id;
     renderBook(id);
     if (!dialog.open) dialog.showModal();
+    $('bookBody').scrollTop = 0;
     for (const el of scroller.querySelectorAll('.book.open')) el.classList.remove('open');
-    const el = bookEl(id);
-    el.classList.add('open');
+    bookEl(id)?.classList.add('open');
     if (push) history.replaceState(null, '', '#libro/' + id);
+    loadSummary(id).then(() => { if (state.current === id && dialog.open) renderBook(id, true); });
   }
   function renderBook(id, keepScroll) {
     const b = books[id], cat = categories[b.c], mark = state.marks[id];
     const [bg, fg, , , style = 'plain', ac = '#000', font = 'serif'] = b.s;
     const readers = state.shared?.byBook?.[id];
-    const who = readers ? Object.entries(STATUS).filter(([k]) => readers[k]?.length).map(([k, s]) => `<p><b>${s.label === 'Quiero leerlo' ? 'Lo quieren leer' : s.label === 'Leído' ? 'Lo leyeron' : 'Lo están leyendo'}:</b> ${readers[k].map(esc).join(', ')}</p>`).join('') : '';
+    const who = readers ? Object.entries(STATUS).filter(([k]) => readers[k]?.length).map(([k, s]) => `<p><b>${k === 'quiero' ? 'Lo quieren leer' : k === 'leido' ? 'Lo leyeron' : 'Lo están leyendo'}:</b> ${readers[k].map(esc).join(', ')}</p>`).join('') : '';
     const prev = order[b.index - 1], next = order[b.index + 1];
     const body = $('bookBody'), scroll = body.scrollTop;
+    const loaded = summaries[id], loading = loaded && typeof loaded.then === 'function', data = loaded && !loading ? loaded : null;
+    let sum;
+    if (b.nuevo) sum = b.aporte.note ? `<div class="summary">${paragraphs(b.aporte.note)}</div><p class="muted small">Nota de ${by(b.aporte)}. El resumen completo está pendiente.</p>` : `<p class="muted">Este libro lo sumó ${by(b.aporte)}. El resumen todavía está pendiente.</p>`;
+    else if (data?.[state.len]) sum = `<p class="read-time">⏱ ${minutes(data[state.len])} min de lectura · ${words(data[state.len])} palabras</p><div class="summary">${paragraphs(data[state.len])}</div>`;
+    else if (loading) sum = `<p class="read-time">Cargando resumen…</p><div class="summary">${paragraphs(b.l || b.m || b.r)}</div>`;
+    else sum = `<div class="summary">${paragraphs(b.l || b.m || b.r)}</div><p class="muted small">El resumen ampliado de este libro está en preparación.</p>`;
+    const fixes = (b.fix || []).slice().reverse();
     body.innerHTML = `
-      <button type="button" class="close" data-close aria-label="Cerrar">×</button>
+      <div class="sheet-bar"><button type="button" class="close" data-close aria-label="Cerrar">×</button><span class="grab" aria-hidden="true"></span></div>
       <div class="detail">
-        <div class="cover-wrap"><div class="cover st-${style} f-${font}" style="--bg:${bg};--fg:${fg};--ac:${ac}">
+        <div class="cover-wrap">${b.aporte?.photo ? `<img class="cover-photo" data-photo="${b.aporte.id}" alt="Foto de ${esc(b.t)}">` : `<div class="cover st-${style} f-${font}" style="--bg:${bg};--fg:${fg};--ac:${ac}">
           <div class="cover-front"><span class="cover-a">${esc(b.a)}</span><span class="cover-t">${esc(b.t)}</span><span class="cover-orn"></span></div>
-          <div class="cover-side bg"></div><div class="cover-pages"></div>
-        </div></div>
+          <div class="cover-side bg"></div></div>`}</div>
         <div class="info">
           <p class="cat-pill" style="--cc:${cat.color}">${cat.icon} ${esc(cat.name)}</p>
           <h2 id="bookTitle">${esc(b.t)}</h2>
           <p class="by">${esc(b.a)}${b.y ? ` · <span>${year(b.y)}</span>` : ''}</p>
           <p class="where">📍 ${where(b)}</p>
           ${b.fam ? '<p class="note fam">✒️ Escrito por un Gregorini: autor de la familia.</p>' : ''}
-          ${b.q > 1 ? `<p class="note">${b.q === 3 ? 'Identificación dudosa' : 'Identificación probable'}: el lomo no se lee completo en la foto. Si sabés cuál es, avisá para corregirlo.</p>` : ''}
+          ${b.q > 1 ? `<div class="note doubt"><p><b>${b.q === 3 ? 'Identificación dudosa' : 'Identificación probable'}.</b> El lomo no se lee completo en la foto. ¿Lo tenés a mano? Sacale una foto y corregilo.</p><button type="button" class="btn-fix" data-fix>📷 Rectificar con una foto</button></div>` : ''}
+          ${fixes.length ? `<div class="note fixed">${fixes.map(f => `<p>✏️ <b>Corregido por ${by(f)}</b>${f.title || f.author ? `: antes figuraba como «${esc(base[id]?.t)}» de ${esc(base[id]?.a)}` : ''}.${f.note ? ` «${esc(f.note)}»` : ''}${f.photo ? ` <button type="button" class="link" data-show-photo="${f.id}">Ver foto</button>` : ''}${f.by === state.name ? ` · <button type="button" class="link" data-del-aporte="${f.id}">Deshacer</button>` : ''}</p>`).join('')}<div class="fix-photo" id="fixPhoto"></div></div>` : ''}
           ${b.dup ? `<p class="note">📚 Hay otro ejemplar en la biblioteca: <button type="button" class="link" data-open="${b.dup}">ver dónde está</button>.</p>` : ''}
-          <div class="seg seg-small" role="group" aria-label="Largo del resumen">${Object.entries(LEN).map(([k, v]) => `<button type="button" data-len="${k}" aria-pressed="${k === state.len}">${v}</button>`).join('')}</div>
-          <p class="summary">${esc(b[state.len])}</p>
+          ${b.nuevo ? '' : `<div class="seg seg-small" role="group" aria-label="Resumen">${Object.entries(LEN).map(([k, v]) => `<button type="button" data-len="${k}" aria-pressed="${k === state.len}">${v}<small>${k === 'corto' ? '2 min' : '7 min'}</small></button>`).join('')}</div>`}
+          ${sum}
           <div class="status" role="group" aria-label="Tu lectura">${Object.entries(STATUS).map(([k, s]) => `<button type="button" class="st st-btn-${k}" data-mark="${k}" aria-pressed="${mark === k}"><span>${s.icon}</span> ${s.label}</button>`).join('')}</div>
           <p class="muted small">${state.token ? `Marcando como <b>${esc(state.name)}</b>.` : 'Tus marcas se guardan en este navegador. <button type="button" class="link" data-login>Entrá</button> para tenerlas en todos lados.'}</p>
           ${who ? `<div class="readers">${who}</div>` : ''}
+          <div class="tools">
+            ${b.q > 1 ? '' : '<button type="button" class="ghost" data-fix>📷 Rectificar</button>'}
+            ${b.nuevo && b.aporte.by === state.name ? `<button type="button" class="ghost" data-del-aporte="${b.aporte.id}">Quitar de la biblioteca</button>` : ''}
+            <a class="ghost" href="https://www.google.com/search?tbm=bks&q=${encodeURIComponent(b.t + ' ' + b.a)}" target="_blank" rel="noopener">Buscar el libro ↗</a>
+          </div>
           <nav class="book-nav">
             <button type="button" ${prev ? `data-open="${prev.id}"` : 'disabled'}>← ${prev ? esc(short(prev.t)) : ''}</button>
-            <a href="https://www.google.com/search?tbm=bks&q=${encodeURIComponent(b.t + ' ' + b.a)}" target="_blank" rel="noopener">Buscar el libro ↗</a>
             <button type="button" ${next ? `data-open="${next.id}"` : 'disabled'}>${next ? esc(short(next.t)) : ''} →</button>
           </nav>
         </div>
       </div>`;
     if (keepScroll) body.scrollTop = scroll;
+    const img = body.querySelector('[data-photo]');
+    if (img) loadPhoto(img.dataset.photo).then(src => { if (src) img.src = src; else img.replaceWith(Object.assign(document.createElement('p'), { className: 'muted', textContent: 'Sin foto.' })); });
   }
   const short = t => t.length > 22 ? t.slice(0, 20).trim() + '…' : t;
 
   dialog.addEventListener('click', e => {
     if (e.target === dialog || e.target.closest('[data-close]')) return dialog.close();
+    const len = e.target.closest('[data-len]');
+    if (len) { state.len = len.dataset.len; store.set('biblio:len2', state.len); renderBook(state.current, true); return; }
     const open = e.target.closest('[data-open]');
     if (open) {
       const b = books[open.dataset.open];
       if ((state.view === 'A' || state.view === 'B') && b.bookcase !== state.view) setView(b.bookcase, false);
       openBook(b.id);
-      bookEl(b.id).scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      bookEl(b.id)?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
     }
     const mark = e.target.closest('[data-mark]');
     if (mark) setMark(state.current, state.marks[state.current] === mark.dataset.mark ? null : mark.dataset.mark);
     if (e.target.closest('[data-login]')) { dialog.close(); openLogin(); }
+    if (e.target.closest('[data-fix]')) openForm('fix', state.current);
+    const show = e.target.closest('[data-show-photo]');
+    if (show) loadPhoto(show.dataset.showPhoto).then(src => { if (src) $('fixPhoto').innerHTML = `<img src="${src}" alt="Foto de la corrección">`; });
+    const del = e.target.closest('[data-del-aporte]');
+    if (del && confirm('¿Seguro? Se borra para todos.')) removeAporte(del.dataset.delAporte);
   });
   dialog.addEventListener('keydown', e => {
-    if (e.target.closest('input,select')) return;
+    if (e.target.closest('input,select,textarea')) return;
     const b = books[state.current];
     if (e.key === 'ArrowRight' && order[b.index + 1]) openBook(order[b.index + 1].id);
     if (e.key === 'ArrowLeft' && order[b.index - 1]) openBook(order[b.index - 1].id);
@@ -316,7 +387,17 @@
     for (const el of scroller.querySelectorAll('.book.open')) el.classList.remove('open');
     if (location.hash.startsWith('#libro/')) history.replaceState(null, '', '#' + state.view);
     const el = state.current && bookEl(state.current);
-    if (el && !el.closest('[hidden]')) el.focus({ preventScroll: true });
+    if (el && !el.closest('[hidden]') && !touch) el.focus({ preventScroll: true });
+  });
+  // En el celular, deslizar la ficha hacia abajo desde la barra la cierra.
+  let dragY = null;
+  dialog.addEventListener('touchstart', e => { if (e.target.closest('.sheet-bar')) dragY = e.touches[0].clientY; }, { passive: true });
+  dialog.addEventListener('touchmove', e => { if (dragY != null) dialog.style.transform = `translateY(${Math.max(0, e.touches[0].clientY - dragY)}px)`; }, { passive: true });
+  dialog.addEventListener('touchend', e => {
+    if (dragY == null) return;
+    const moved = e.changedTouches[0].clientY - dragY;
+    dragY = null; dialog.style.transform = '';
+    if (moved > 90) dialog.close();
   });
 
   // ---------- Marcas de lectura ----------
@@ -328,10 +409,11 @@
     if (state.token) queueSave();
     if (status === 'leido') toast(`¡Uno más! Llevás ${countRead()} leídos.`);
   }
-  const countRead = () => Object.values(state.marks).filter(s => s === 'leido').length;
+  const countRead = () => Object.keys(state.marks).filter(id => state.marks[id] === 'leido' && books[id]).length;
   function refreshMarks() {
     for (const b of order) {
       const el = bookEl(b.id), m = state.marks[b.id];
+      if (!el) continue;
       el.classList.remove('m-leido', 'm-leyendo', 'm-quiero');
       if (m) el.classList.add('m-' + m);
     }
@@ -344,7 +426,6 @@
     if (state.view === 'stats') renderStats();
     if (state.view === 'catalog') renderCatalog();
   }
-
   let saveTimer;
   function queueSave() {
     clearTimeout(saveTimer);
@@ -369,14 +450,13 @@
     if (!r.ok || !j) { const e = new Error(j?.error || (r.status === 404 ? 'Las cuentas no están disponibles en este servidor.' : 'El servidor no respondió bien.')); e.status = r.status; throw e; }
     return j;
   }
-
   async function loadShared() {
     try { state.shared = await api('biblioteca'); state.server = true; }
     catch (e) { state.server = false; return; }
     if (state.view === 'stats') renderStats();
     if (dialog.open) renderBook(state.current, true);
   }
-
+  let afterLogin = null;
   async function signIn(token, name) {
     const local = store.get('biblio:marks:local', {});
     state.token = token; state.name = name;
@@ -391,6 +471,7 @@
     if (added > 0) { await api('biblioteca', { marks: merged }).catch(() => {}); store.del('biblio:marks:local'); }
     renderAccount(); refreshMarks(); loadShared();
     toast(`¡Hola, ${name}!${added > 0 ? ` Sumamos ${added} marcas que tenías en este navegador.` : ''}`);
+    if (afterLogin) { const fn = afterLogin; afterLogin = null; fn(); }
   }
   function signOut(message) {
     if (state.token) api('auth', { action: 'logout' }).catch(() => {});
@@ -406,19 +487,20 @@
     $('account').classList.toggle('in', Boolean(state.token));
   }
   const loginDialog = $('loginDialog');
-  function openLogin() {
+  function openLogin(reason) {
     $('loginForm').hidden = Boolean(state.token);
     $('profile').hidden = !state.token;
     if (state.token) {
       $('profileName').textContent = state.name;
       const c = s => Object.values(state.marks).filter(v => v === s).length;
       $('profileInfo').textContent = `Leíste ${c('leido')} de ${order.length} libros, estás leyendo ${c('leyendo')} y querés leer ${c('quiero')}. Tus marcas se guardan en tu cuenta.`;
-    } else $('loginError').textContent = '';
+    } else $('loginError').textContent = reason || '';
     loginDialog.showModal();
   }
-  $('account').addEventListener('click', openLogin);
+  $('account').addEventListener('click', () => openLogin());
   $('closeProfile').addEventListener('click', () => loginDialog.close());
   $('logout').addEventListener('click', () => { loginDialog.close(); signOut('Saliste. Lo que marques ahora queda en este navegador.'); });
+  loginDialog.addEventListener('close', () => { if (!state.token) afterLogin = null; });
   $('loginForm').addEventListener('submit', async e => {
     const action = e.submitter?.value;
     if (action === 'cancel') return;
@@ -437,21 +519,192 @@
     } finally { buttons.forEach(b => b.disabled = false); }
   });
 
+  // ---------- Aportes: rectificar un libro o sumar uno nuevo ----------
+  const LOCAL_APORTES = 'biblio:aportes:local';
+  async function loadAportes() {
+    let remote = [];
+    try { remote = (await api('aportes')).aportes || []; state.server = true; }
+    catch (e) { if (e.status === 0 || e.status === 404) state.server = false; }
+    state.aportes = [...remote, ...store.get(LOCAL_APORTES, [])];
+    rebuild();
+  }
+  function rebuild() {
+    indexBooks();
+    buildCases();
+    renderChips();
+    refreshMarks();
+    if (state.view === 'A' || state.view === 'B') layout();
+    applyFilters();
+    if (dialog.open && books[state.current]) renderBook(state.current, true);
+  }
+  const photoCache = {};
+  function loadPhoto(id) {
+    const local = store.get(LOCAL_APORTES, []).find(a => a.id === id);
+    if (local) return Promise.resolve(local.photoData || null);
+    return photoCache[id] ??= api('aportes?foto=' + id).then(r => r.photo).catch(() => null);
+  }
+  async function removeAporte(id) {
+    const local = store.get(LOCAL_APORTES, []);
+    if (local.some(a => a.id === id)) store.set(LOCAL_APORTES, local.filter(a => a.id !== id));
+    else {
+      try { await api('aportes', { action: 'delete', id }); }
+      catch (e) { return toast(e.message); }
+    }
+    const was = state.aportes.find(a => a.id === id);
+    state.aportes = state.aportes.filter(a => a.id !== id);
+    if (was?.type === 'new') { dialog.close(); state.current = null; }
+    rebuild();
+    toast('Listo, se deshizo.');
+  }
+
+  // Achica la foto (máx. 1280 px) y calcula su color dominante para pintar el lomo.
+  function readPhoto(file) {
+    return new Promise((resolve, reject) => {
+      if (!file || !/^image\//.test(file.type)) return reject(new Error('Elegí una imagen.'));
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        let q = .8, data;
+        do { data = c.toDataURL('image/jpeg', q); q -= .12; } while (data.length > 850000 && q > .3);
+        const px = ctx.getImageData(Math.round(c.width * .3), Math.round(c.height * .3), Math.max(1, Math.round(c.width * .4)), Math.max(1, Math.round(c.height * .4))).data;
+        let r = 0, g = 0, bl = 0, n = 0;
+        for (let i = 0; i < px.length; i += 16) { r += px[i]; g += px[i + 1]; bl += px[i + 2]; n++; }
+        const color = '#' + [r, g, bl].map(v => Math.round(v / n).toString(16).padStart(2, '0')).join('');
+        resolve({ data, color });
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo leer la imagen.')); };
+      img.src = url;
+    });
+  }
+
+  const formDialog = $('formDialog');
+  let formPhoto = null;
+  function openForm(type, bookId) {
+    if (!state.token && state.server !== false) {
+      afterLogin = () => openForm(type, bookId);
+      if (dialog.open) dialog.close();
+      return openLogin(type === 'fix' ? 'Entrá con tu cuenta para rectificar un libro.' : 'Entrá con tu cuenta para sumar un libro nuevo.');
+    }
+    formPhoto = null;
+    const b = bookId && books[bookId];
+    const options = (bc, n) => [1, 2, 3, 4, 5].map(i => `<option value="${bc}${i}" ${bc + i === n ? 'selected' : ''}>${bc === 'A' ? 'Biblioteca I' : 'Biblioteca II'} · estante ${i}</option>`).join('');
+    $('formBody').innerHTML = `
+      <div class="sheet-bar"><button type="button" class="close" data-close-form aria-label="Cerrar">×</button><span class="grab" aria-hidden="true"></span></div>
+      <h2>${type === 'fix' ? '📷 Rectificar libro' : '＋ Nuevo libro'}</h2>
+      <p class="muted">${type === 'fix'
+        ? `Si el lomo se leyó mal, sacale una foto al libro (lomo o tapa) y corregí lo que haga falta. Ahora figura como <b>«${esc(b.t)}»</b> de ${esc(b.a)}.`
+        : 'Sumá un libro que llegó a la biblioteca. Con una foto de la tapa o del lomo, el lomo se pinta de su color.'}</p>
+      <div class="photo-pick">
+        <div class="photo-preview" id="photoPreview"><span>${type === 'fix' ? 'Foto del lomo o la tapa' : 'Foto de la tapa'}</span></div>
+        <div class="photo-btns">
+          <label class="btn-photo">📷 Sacar foto<input type="file" accept="image/*" capture="environment" id="camInput"></label>
+          <label class="btn-photo alt">🖼️ Importar imagen<input type="file" accept="image/*" id="fileInput"></label>
+        </div>
+      </div>
+      <form id="aporteForm" class="aporte" novalidate>
+        <label>Título${type === 'new' ? ' *' : ''} <input name="title" maxlength="160" ${type === 'fix' ? `value="${esc(b.t)}"` : 'required'} autocomplete="off"></label>
+        <label>Autor <input name="author" maxlength="120" ${type === 'fix' ? `value="${esc(b.a)}"` : ''} autocomplete="off"></label>
+        ${type === 'new' ? `
+          <div class="row2">
+            <label>Categoría <select name="category">${Object.entries(categories).map(([id, c]) => `<option value="${id}">${c.icon} ${esc(c.name)}</option>`).join('')}</select></label>
+            <label>Año <input name="year" inputmode="numeric" maxlength="5" placeholder="Opcional"></label>
+          </div>
+          <label>¿Dónde lo pusieron? <select name="place">${options('A', 'A5')}${options('B', '')}</select></label>
+          <label class="check"><input type="checkbox" name="read"> Ya lo leí</label>` : ''}
+        <label>${type === 'fix' ? 'Comentario (opcional)' : 'De qué trata o por qué está acá (opcional)'} <textarea name="note" rows="3" maxlength="2000" placeholder="${type === 'fix' ? 'Por ejemplo: es el tomo 2, no el 1.' : 'Un par de líneas para la ficha.'}"></textarea></label>
+        <p class="error" id="formError" role="alert"></p>
+        <button class="primary big" type="submit">${type === 'fix' ? 'Guardar corrección' : 'Sumar a la biblioteca'}</button>
+        ${state.server === false ? '<p class="muted small">Sin conexión con el servidor: se guarda solo en este navegador.</p>' : `<p class="muted small">Queda a nombre de <b>${esc(state.name)}</b> y lo ve toda la familia.</p>`}
+      </form>`;
+    formDialog.dataset.type = type;
+    formDialog.dataset.book = bookId || '';
+    if (!formDialog.open) formDialog.showModal();
+  }
+  formDialog.addEventListener('click', e => { if (e.target === formDialog || e.target.closest('[data-close-form]')) formDialog.close(); });
+  formDialog.addEventListener('change', async e => {
+    if (!e.target.matches('#camInput, #fileInput')) return;
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    $('formError').textContent = '';
+    $('photoPreview').classList.add('busy');
+    try {
+      formPhoto = await readPhoto(file);
+      $('photoPreview').innerHTML = `<img src="${formPhoto.data}" alt="Foto elegida"><button type="button" class="photo-x" data-clear-photo aria-label="Quitar foto">×</button>`;
+    } catch (err) { $('formError').textContent = err.message; }
+    $('photoPreview').classList.remove('busy');
+  });
+  formDialog.addEventListener('click', e => {
+    if (!e.target.closest('[data-clear-photo]')) return;
+    formPhoto = null;
+    $('photoPreview').innerHTML = '<span>Sin foto</span>';
+  });
+  formDialog.addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = e.target, type = formDialog.dataset.type, bookId = formDialog.dataset.book;
+    const val = n => f.elements[n]?.value.trim() || '';
+    const payload = { action: 'add', type, note: val('note') };
+    if (type === 'fix') {
+      const b = books[bookId];
+      payload.bookId = bookId;
+      if (val('title') && val('title') !== b.t) payload.title = val('title');
+      if (val('author') && val('author') !== b.a) payload.author = val('author');
+      if (!formPhoto && !payload.title && !payload.author && !payload.note) return $('formError').textContent = 'Sacá una foto o cambiá el título, el autor o el comentario.';
+    } else {
+      if (!val('title')) return $('formError').textContent = 'Falta el título.';
+      Object.assign(payload, { title: val('title'), author: val('author'), category: val('category'), year: /^-?\d{1,4}$/.test(val('year')) ? Number(val('year')) : null,
+        bookcase: val('place')[0], shelf: Number(val('place')[1]), color: formPhoto?.color || null });
+    }
+    if (formPhoto) payload.photo = formPhoto.data;
+    const button = f.querySelector('[type=submit]');
+    button.disabled = true; button.textContent = 'Guardando…';
+    try {
+      let aporte;
+      if (state.server === false) {
+        aporte = { ...payload, id: 'l' + Date.now().toString(36), by: state.name || 'vos', date: Date.now(), photo: Boolean(payload.photo), photoData: payload.photo };
+        delete aporte.action;
+        const local = store.get(LOCAL_APORTES, []);
+        if (!store.set(LOCAL_APORTES, [...local, aporte])) { aporte.photo = false; delete aporte.photoData; store.set(LOCAL_APORTES, [...local, aporte]); }
+      } else aporte = (await api('aportes', payload)).aporte;
+      state.aportes.push(aporte);
+      formDialog.close();
+      rebuild();
+      if (type === 'new') {
+        const id = 'n-' + aporte.id;
+        if (f.elements.read?.checked) setMark(id, 'leido');
+        setView(books[id].bookcase);
+        const el = bookEl(id);
+        el?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+        el?.classList.add('pick');
+        setTimeout(() => { el?.classList.remove('pick'); openBook(id); }, 1000);
+        toast('¡Libro sumado a la biblioteca!');
+      } else { openBook(bookId); toast('¡Gracias! La corrección quedó guardada.'); }
+    } catch (err) {
+      $('formError').textContent = err.message;
+      button.disabled = false; button.textContent = type === 'fix' ? 'Guardar corrección' : 'Sumar a la biblioteca';
+    }
+  });
+
   // ---------- Catálogo ----------
   function renderCatalog() {
     const sort = $('sort').value;
     const list = order.filter(matches);
-    const by = { t: b => fold(b.t), a: b => fold(b.a.split(' ').slice(-1)[0] + b.a), c: b => categories[b.c].name + fold(b.t), y: b => b.y ?? 9999 };
-    if (by[sort]) list.sort((a, b) => { const x = by[sort](a), y = by[sort](b); return x < y ? -1 : x > y ? 1 : a.index - b.index; });
+    const key = { t: b => fold(b.t), a: b => fold(b.a.split(' ').slice(-1)[0] + b.a), c: b => categories[b.c].name + fold(b.t), y: b => b.y ?? 9999, n: b => -(b.aporte?.date || 0) };
+    if (key[sort]) list.sort((a, b) => { const x = key[sort](a), y = key[sort](b); return x < y ? -1 : x > y ? 1 : a.index - b.index; });
     $('catalogCount').textContent = `${list.length} ${list.length === 1 ? 'libro' : 'libros'}${filtering() ? ' con estos filtros' : ' en total'}`;
     $('catalog').innerHTML = list.map(b => {
       const cat = categories[b.c], m = state.marks[b.id];
       return `<li><button type="button" class="cat-row" data-open-book="${b.id}">
         <span class="mini" style="--bg:${b.s[0]};--fg:${b.s[1]}"></span>
-        <span class="cr-main"><b>${esc(b.t)}</b><span>${esc(b.a)}${b.y ? ' · ' + year(b.y) : ''}</span></span>
+        <span class="cr-main"><b>${esc(b.t)}</b><span>${esc(b.a)}${b.y ? ' · ' + year(b.y) : ''}</span><span class="cr-mob">${cat.icon} ${esc(cat.name)}</span></span>
         <span class="cr-cat" style="--cc:${cat.color}">${cat.icon} ${esc(cat.name)}</span>
         <span class="cr-loc">${b.bookcase === 'A' ? 'I' : 'II'}·${b.shelf}·${b.place}</span>
-        <span class="cr-st">${m ? `<span class="pill pill-${m}">${STATUS[m].icon} ${STATUS[m].label}</span>` : ''}</span>
+        <span class="cr-st">${b.nuevo ? '<span class="pill pill-new">Nuevo</span>' : ''}${m ? `<span class="pill pill-${m}">${STATUS[m].icon}<i> ${STATUS[m].label}</i></span>` : ''}</span>
       </button></li>`;
     }).join('') || '<li class="empty">No hay libros con estos filtros.</li>';
   }
@@ -460,19 +713,19 @@
 
   // ---------- Estadísticas ----------
   function renderStats() {
-    const read = countRead(), c = s => Object.values(state.marks).filter(v => v === s).length;
+    const read = countRead(), c = s => Object.keys(state.marks).filter(id => state.marks[id] === s && books[id]).length;
     const byCat = {}, authors = {};
     for (const b of order) {
       const x = byCat[b.c] ??= { n: 0, read: 0 };
       x.n++; if (state.marks[b.id] === 'leido') x.read++;
-      for (const a of b.a.split(/\s*[,&]\s*|\s+y\s+/)) if (a && !/varios|por confirmar/i.test(a)) authors[a] = (authors[a] || 0) + 1;
+      for (const a of b.a.split(/\s*[,&]\s*|\s+y\s+/)) if (a && !/varios|por confirmar|por completar/i.test(a)) authors[a] = (authors[a] || 0) + 1;
     }
     const topAuthors = Object.entries(authors).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 12);
     const max = Math.max(...Object.values(byCat).map(x => x.n));
     const doubt = order.filter(b => b.q > 1);
-    const years = order.filter(b => b.y).map(b => b.y);
     const oldest = order.filter(b => b.y).sort((a, b) => a.y - b.y)[0];
     const readers = state.shared?.readers || [];
+    const recent = state.aportes.slice().sort((a, b) => b.date - a.date).slice(0, 8);
     $('viewStats').innerHTML = `
       <div class="stat-cards">
         <div class="card"><b>${order.length}</b><span>libros en las dos bibliotecas</span></div>
@@ -480,7 +733,7 @@
         <div class="card ok"><b>${read}</b><span>${state.token ? 'leídos por ' + esc(state.name) : 'leídos (en este navegador)'}</span></div>
         <div class="card"><b>${c('leyendo')}</b><span>leyendo ahora</span></div>
         <div class="card"><b>${c('quiero')}</b><span>en la lista de deseos</span></div>
-        <div class="card"><b>${years.length ? year(oldest.y) : '—'}</b><span>la obra más antigua: ${oldest ? esc(oldest.t) : ''}</span></div>
+        <div class="card"><b>${oldest ? year(oldest.y) : '—'}</b><span>la obra más antigua: ${oldest ? esc(oldest.t) : ''}</span></div>
       </div>
       <div class="stat-grid">
         <section class="panel"><h3>Por categoría</h3>
@@ -490,16 +743,20 @@
             <span class="bar-n">${x.read ? x.read + '/' : ''}${x.n}</span></button>`).join('')}
           <p class="muted small">La parte más oscura de cada barra son los leídos.</p>
         </section>
+        <section class="panel"><h3>Lectores de la familia</h3>${readers.length ? `<ol class="authors">${readers.map(r => `<li><span>${esc(r.name)}</span><span>${r.leido} leídos · ${r.leyendo} leyendo · ${r.quiero} quiere</span></li>`).join('')}</ol>` : `<p class="muted">${!state.token ? 'Cuando cada uno entre con su cuenta y marque libros, acá aparece quién leyó qué.' : 'Todavía nadie marcó libros.'}</p>`}</section>
+        <section class="panel"><h3>Últimos aportes</h3>${recent.length ? `<ul class="doubt">${recent.map(a => {
+          const id = a.type === 'new' ? 'n-' + a.id : a.bookId;
+          return `<li>${a.type === 'new' ? '＋' : '✏️'} <button type="button" class="link" data-open-book="${id}">${esc(books[id]?.t || a.title)}</button> <span class="muted">${a.type === 'new' ? 'sumado' : 'corregido'} por ${by(a)}</span></li>`;
+        }).join('')}</ul>` : '<p class="muted">Todavía nadie sumó ni corrigió libros.</p>'}<button type="button" class="ghost" data-new-book>＋ Sumar un libro nuevo</button></section>
+        <section class="panel"><h3>Por confirmar <small>${doubt.length}</small></h3><p class="muted small">Lomos que no se leen del todo en las fotos. Abrí uno y tocá <b>Rectificar con una foto</b>.</p><ul class="doubt">${doubt.map(b => `<li><button type="button" class="link" data-open-book="${b.id}">${esc(b.t)}</button> <span class="muted">${esc(b.a)}</span></li>`).join('')}</ul></section>
         <section class="panel"><h3>Autores con más libros</h3><ol class="authors">${topAuthors.map(([a, n]) => `<li><button type="button" class="link" data-author="${esc(a)}">${esc(a)}</button><span>${n}</span></li>`).join('')}</ol></section>
-        <section class="panel"><h3>Lectores de la familia</h3>${readers.length ? `<ol class="authors">${readers.map(r => `<li><span>${esc(r.name)}</span><span>${r.leido} leídos · ${r.leyendo} leyendo · ${r.quiero} quiere</span></li>`).join('')}</ol>` : `<p class="muted">${state.server === false || !state.token ? 'Cuando cada uno entre con su cuenta y marque libros, acá aparece quién leyó qué.' : 'Todavía nadie marcó libros.'}</p>`}</section>
-        <section class="panel"><h3>Por confirmar <small>${doubt.length}</small></h3><p class="muted small">Lomos que no se leen del todo en las fotos. Si los reconocés, se corrigen en <code>data/</code>.</p><ul class="doubt">${doubt.map(b => `<li><button type="button" class="link" data-open-book="${b.id}">${esc(b.t)}</button> <span class="muted">${esc(b.a)}</span></li>`).join('')}</ul></section>
       </div>`;
   }
   $('viewStats').addEventListener('click', e => {
     const cat = e.target.closest('[data-cat-go]'), author = e.target.closest('[data-author]'), open = e.target.closest('[data-open-book]');
     if (cat) { state.cat = cat.dataset.catGo; setView(order.find(b => b.c === state.cat).bookcase); }
     if (author) { state.q = author.dataset.author; $('search').value = state.q; setView('catalog'); }
-    if (open) openBook(open.dataset.openBook);
+    if (open && books[open.dataset.openBook]) openBook(open.dataset.openBook);
   });
 
   // ---------- Fotos ----------
@@ -538,20 +795,23 @@
   // ---------- Inicio ----------
   function fromHash() {
     const h = decodeURIComponent(location.hash.slice(1));
+    if (h === 'nuevo') { setView('A', false); return openForm('new'); }
     if (h.startsWith('libro/') && books[h.slice(6)]) { const b = books[h.slice(6)]; setView(b.bookcase, false); openBook(b.id, false); }
     else setView(views[h] ? h : 'A', false);
   }
+  indexBooks();
+  buildCases();
   renderChips();
-  setLen(state.len);
   renderAccount();
   refreshMarks();
   fromHash();
   addEventListener('hashchange', fromHash);
   if (document.fonts) document.fonts.ready.then(layout);
+  loadAportes().then(() => { if (location.hash.startsWith('#libro/n-')) fromHash(); });
   if (state.token) api('biblioteca').then(r => {
     state.marks = { ...state.marks, ...r.marks }; state.shared = r; state.server = true;
     store.set(marksKey(), state.marks); refreshMarks();
-  }).catch(e => { state.server = e.status === 0 || e.status === 404 ? false : state.server; });
+  }).catch(() => {});
 
-  window.biblioDebug = () => ({ view: state.view, total: order.length, marks: { ...state.marks }, user: state.name, visible: order.filter(matches).length });
+  window.biblioDebug = () => ({ view: state.view, total: order.length, marks: { ...state.marks }, user: state.name, visible: order.filter(matches).length, aportes: state.aportes.length });
 })();

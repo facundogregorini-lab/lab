@@ -7,6 +7,7 @@
 <meta name="description" content="La biblioteca del campo El Regreso, libro por libro: resúmenes, categorías y lecturas de la familia.">
 <meta name="theme-color" content="#2a1d14">
 <meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📚%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,6 +29,7 @@
     <div class="ring" id="ring" aria-hidden="true"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" class="ring-bg"/><circle cx="18" cy="18" r="15.5" class="ring-fg" id="ringFg"/></svg><span id="ringPct">0%</span></div>
     <div class="counter-text"><strong id="totalBooks">0</strong> libros<br><span id="readCount">0 leídos</span></div>
   </div>
+  <button class="new-book" type="button" data-new-book>＋ Nuevo libro</button>
   <button class="account" id="account" type="button"><span class="avatar" id="avatar">?</span><span id="accountLabel">Entrar</span></button>
 </header>
 
@@ -40,19 +42,14 @@
 </nav>
 
 <section class="toolbar" aria-label="Filtros">
-  <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="search" type="search" placeholder="Buscar título, autor o tema…" autocomplete="off"><kbd>/</kbd></label>
-  <div class="seg" role="group" aria-label="Largo del resumen">
-    <span class="seg-label">Resumen</span>
-    <button type="button" data-len="r" aria-pressed="true">Corto</button>
-    <button type="button" data-len="m" aria-pressed="false">Medio</button>
-    <button type="button" data-len="l" aria-pressed="false">Largo</button>
-  </div>
+  <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="search" type="search" placeholder="Buscar título, autor o tema…" autocomplete="off" enterkeyhint="search"><kbd>/</kbd></label>
   <select id="statusFilter" aria-label="Filtrar por estado">
     <option value="">Todos los estados</option>
     <option value="leido">Leídos</option>
     <option value="no">No leídos</option>
     <option value="leyendo">Leyendo</option>
     <option value="quiero">Quiero leer</option>
+    <option value="dudas">Por confirmar</option>
   </select>
   <button type="button" class="ghost" id="surprise" title="Elegir un libro al azar que todavía no leíste">🎲 ¿Qué leo?</button>
 </section>
@@ -60,13 +57,17 @@
 
 <main id="main">
   <section class="view room" id="viewShelves" aria-label="Biblioteca">
+    <div class="case-switch" role="group" aria-label="Elegir biblioteca">
+      <button type="button" data-view="A" aria-pressed="true">Biblioteca I · Clásicos</button>
+      <button type="button" data-view="B" aria-pressed="false">Biblioteca II · Historia</button>
+    </div>
     <div class="case-scroll" id="caseScroll"></div>
     <p class="hint" id="shelfHint">Pasá el mouse por un lomo para ver de qué se trata. Tocá o hacé clic para abrirlo.</p>
   </section>
   <section class="view" id="viewCatalog" hidden aria-label="Catálogo">
     <div class="catalog-head">
       <p id="catalogCount"></p>
-      <label>Ordenar por <select id="sort"><option value="loc">Ubicación</option><option value="t">Título</option><option value="a">Autor</option><option value="c">Categoría</option><option value="y">Año</option></select></label>
+      <label>Ordenar por <select id="sort"><option value="loc">Ubicación</option><option value="t">Título</option><option value="a">Autor</option><option value="c">Categoría</option><option value="y">Año</option><option value="n">Recién sumados</option></select></label>
     </div>
     <ol class="catalog" id="catalog"></ol>
   </section>
@@ -77,18 +78,30 @@
   </section>
 </main>
 
+<nav class="bottom-nav" aria-label="Navegación">
+  <button type="button" data-view="shelves" aria-pressed="true"><span aria-hidden="true">📚</span>Estantes</button>
+  <button type="button" data-view="catalog" aria-pressed="false"><span aria-hidden="true">☰</span>Catálogo</button>
+  <button type="button" class="nav-new" data-new-book><span aria-hidden="true">＋</span>Nuevo</button>
+  <button type="button" data-view="stats" aria-pressed="false"><span aria-hidden="true">📊</span>Datos</button>
+  <button type="button" data-view="photos" aria-pressed="false"><span aria-hidden="true">🖼️</span>Fotos</button>
+</nav>
+
 <div class="peek" id="peek" role="tooltip" hidden></div>
 
 <dialog class="sheet" id="bookDialog" aria-labelledby="bookTitle">
   <div class="sheet-inner" id="bookBody"></div>
 </dialog>
 
+<dialog class="sheet sheet-form" id="formDialog" aria-label="Rectificar o sumar libro">
+  <div class="sheet-inner" id="formBody"></div>
+</dialog>
+
 <dialog class="modal" id="loginDialog" aria-labelledby="loginTitle">
   <form method="dialog" class="login" id="loginForm">
     <button class="close" value="cancel" aria-label="Cerrar" formnovalidate>×</button>
     <h2 id="loginTitle">Tu biblioteca</h2>
-    <p class="muted">Entrá para marcar qué libros leíste y verlo desde cualquier dispositivo. Es la misma cuenta de los otros proyectos del Lab.</p>
-    <label>Usuario <input id="username" autocomplete="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_.\-]{3,20}"></label>
+    <p class="muted">Entrá para marcar qué libros leíste, corregir lomos y sumar libros nuevos desde cualquier dispositivo. Es la misma cuenta de los otros proyectos del Lab.</p>
+    <label>Usuario <input id="username" autocomplete="username" autocapitalize="none" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_.\-]{3,20}"></label>
     <label>Contraseña <input id="password" type="password" autocomplete="current-password" required minlength="6"></label>
     <p class="error" id="loginError" role="alert"></p>
     <div class="row">
