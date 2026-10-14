@@ -197,35 +197,50 @@
   }
   $('salaCases').addEventListener('click', e => { const c = e.target.closest('[data-zoom]'); if (c) zoomInto(c.dataset.zoom); });
 
-  // ---------- Entrada: video del lugar (o recorrido por las fotos) ----------
+  // ---------- Entrada: el recorrido en video por la sala, con las bibliotecas para tocar ----------
   function showIntro() {
-    const intro = $('intro');
+    const intro = $('intro'), video = $('introVideo'), bg = $('introBg').getContext('2d');
     let seen = false;
     try { seen = sessionStorage.getItem('biblio:intro') === '1'; } catch {}
     if (seen || location.hash || navigator.webdriver) return;
     intro.hidden = false;
     document.body.classList.add('intro-on');
-    // Si existe assets/video/entrada.mp4, se usa el video; si no, quedan las fotos en movimiento.
-    const video = document.createElement('video');
-    Object.assign(video, { muted: true, autoplay: true, loop: true, playsInline: true, preload: 'auto' });
-    video.setAttribute('playsinline', '');
-    video.poster = 'assets/fotos/foto-01.webp';
-    video.className = 'intro-video';
-    video.innerHTML = '<source src="assets/video/entrada.webm" type="video/webm"><source src="assets/video/entrada.mp4" type="video/mp4">';
-    video.addEventListener('loadeddata', () => { $('introMedia').appendChild(video); $('introMedia').classList.add('has-video'); $('introSound').hidden = false; }, { once: true });
-    video.load();
-    $('introSound').onclick = () => { video.muted = !video.muted; $('introSound').textContent = video.muted ? '🔇' : '🔊'; };
-    const close = () => {
-      try { sessionStorage.setItem('biblio:intro', '1'); } catch {}
-      intro.classList.add('leaving');
-      document.body.classList.remove('intro-on');
-      setTimeout(() => { intro.hidden = true; video.pause(); }, 900);
-      setView('room');
+    const chips = [...intro.querySelectorAll('.intro-chip')];
+    let raf;
+    // Fondo desenfocado que acompaña al video (útil en pantallas horizontales, porque el video es vertical).
+    const tick = () => {
+      const t = video.currentTime || 0;
+      if (video.readyState >= 2) bg.drawImage(video, 0, 0, 18, 24);
+      $('introBar').style.width = (video.duration ? t / video.duration * 100 : 0) + '%';
+      intro.classList.toggle('title-off', t > 3.6);
+      for (const c of chips) c.classList.toggle('on', t >= +c.dataset.from && t <= +c.dataset.to && !video.ended);
+      raf = requestAnimationFrame(tick);
     };
-    $('introEnter').onclick = close;
-    $('introSkip').onclick = close;
-    addEventListener('keydown', function esc(e) { if (e.key === 'Escape' && !intro.hidden) { close(); removeEventListener('keydown', esc); } });
-    $('introEnter').focus();
+    const fallback = () => { intro.classList.add('no-video'); $('introSound').hidden = true; setTimeout(() => { $('introEnd').hidden = false; }, 2500); };
+    video.addEventListener('error', fallback, true);
+    video.querySelector('source:last-of-type').addEventListener('error', fallback);
+    video.addEventListener('ended', () => { $('introEnd').hidden = false; intro.classList.add('ended'); });
+    video.play().then(() => { raf = requestAnimationFrame(tick); }).catch(() => {
+      // Sin reproducción automática (ahorro de datos, por ejemplo): se arranca con el primer toque.
+      intro.classList.add('tap-to-play');
+      intro.addEventListener('click', function start(e) { if (e.target.closest('button')) return; intro.classList.remove('tap-to-play'); video.play(); raf = requestAnimationFrame(tick); intro.removeEventListener('click', start); });
+    });
+    $('introSound').onclick = () => { video.muted = !video.muted; $('introSound').textContent = video.muted ? '🔇 Sonido' : '🔊 Sonido'; if (video.paused && !video.ended) video.play(); };
+    $('introReplay').onclick = () => { $('introEnd').hidden = true; intro.classList.remove('ended'); video.currentTime = 0; video.play(); };
+    const go = target => {
+      try { sessionStorage.setItem('biblio:intro', '1'); } catch {}
+      intro.classList.add('leaving', target === 'room' ? 'to-room' : 'to-case');
+      document.body.classList.remove('intro-on');
+      setView(target);
+      if (target === 'A' || target === 'B') {
+        const el = caseEls[target];
+        el.classList.add('arrive');
+        setTimeout(() => el.classList.remove('arrive'), 900);
+      }
+      setTimeout(() => { intro.hidden = true; video.pause(); cancelAnimationFrame(raf); }, 900);
+    };
+    intro.addEventListener('click', e => { const b = e.target.closest('[data-intro-go]'); if (b) go(b.dataset.introGo); });
+    addEventListener('keydown', function esc(e) { if (e.key === 'Escape' && !intro.hidden) { go('room'); removeEventListener('keydown', esc); } });
   }
   const bookEl = id => scroller.querySelector(`.book[data-id="${id}"]`);
 

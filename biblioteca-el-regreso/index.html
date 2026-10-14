@@ -18,21 +18,39 @@
 <a class="skip" href="#main">Saltar a la biblioteca</a>
 
 <div class="intro" id="intro" hidden>
+  <canvas class="intro-bg" id="introBg" width="18" height="24" aria-hidden="true"></canvas>
   <div class="intro-media" id="introMedia" aria-hidden="true">
+    <video class="intro-video" id="introVideo" muted playsinline preload="auto" poster="assets/video/entrada-poster.jpg">
+      <source src="assets/video/entrada.webm" type="video/webm">
+      <source src="assets/video/entrada.mp4" type="video/mp4">
+    </video>
     <div class="kb kb1" style="background-image:url(assets/fotos/foto-01.webp)"></div>
     <div class="kb kb2" style="background-image:url(assets/fotos/foto-02.webp)"></div>
     <div class="kb kb3" style="background-image:url(assets/fotos/foto-08.webp)"></div>
     <div class="kb kb4" style="background-image:url(assets/fotos/foto-10.webp)"></div>
   </div>
   <div class="intro-shade"></div>
-  <div class="intro-text">
+  <div class="intro-progress" aria-hidden="true"><span id="introBar"></span></div>
+  <div class="intro-text" id="introTitle">
     <p class="intro-kicker">Campo El Regreso</p>
     <h2>La biblioteca</h2>
-    <p class="intro-sub">Dos muebles de roble, cientos de libros y las historias de la familia.</p>
-    <button type="button" class="intro-enter" id="introEnter">Entrar a la biblioteca</button>
+    <p class="intro-sub">Pasá. Dos muebles de roble, cientos de libros y las historias de la familia.</p>
   </div>
-  <button type="button" class="intro-skip" id="introSkip">Saltar ›</button>
-  <button type="button" class="intro-sound" id="introSound" hidden aria-label="Activar sonido">🔇</button>
+  <div class="intro-chips">
+    <button type="button" class="intro-chip" data-intro-go="B" data-from="4.4" data-to="7.8"><small>A la izquierda, con el telescopio</small><b>Biblioteca II</b><span>Historia, campo y actualidad · Entrar ›</span></button>
+    <button type="button" class="intro-chip" data-intro-go="A" data-from="11" data-to="99"><small>Junto a la puerta, con el microscopio</small><b>Biblioteca I</b><span>Clásicos, literatura y pensamiento · Entrar ›</span></button>
+  </div>
+  <div class="intro-end" id="introEnd" hidden>
+    <p class="intro-kicker">Bienvenidos</p>
+    <h2>¿Por dónde empezamos?</h2>
+    <div class="intro-end-btns">
+      <button type="button" data-intro-go="A"><b>Biblioteca I</b><span>Clásicos y literatura</span></button>
+      <button type="button" data-intro-go="B"><b>Biblioteca II</b><span>Historia y campo</span></button>
+    </div>
+    <div class="intro-end-links"><button type="button" data-intro-go="room">Ir a la sala</button><button type="button" id="introReplay">↺ Ver el recorrido de nuevo</button></div>
+  </div>
+  <button type="button" class="intro-skip" data-intro-go="room">Saltar ›</button>
+  <button type="button" class="intro-sound" id="introSound" aria-label="Activar sonido">🔇 Sonido</button>
 </div>
 
 <header class="top">
