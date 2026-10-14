@@ -35,12 +35,20 @@ module.exports = handler(async req => {
   }
   if (data.action !== 'add') throw new HttpError(400, 'Acción desconocida.');
 
-  const type = data.type === 'fix' ? 'fix' : 'new';
+  const type = ['fix', 'shelf'].includes(data.type) ? data.type : 'new';
   const entry = {
     id: crypto.randomBytes(6).toString('hex'), type, by: name, date: Date.now(),
     title: text(data.title, 160), author: text(data.author, 120), note: text(data.note, 2000),
   };
-  if (type === 'fix') {
+  const ids = v => (Array.isArray(v) ? v : []).map(String).filter(id => /^[a-z0-9-]{1,48}$/.test(id)).slice(0, 200);
+  if (type === 'shelf') {
+    entry.bookcase = data.bookcase === 'B' ? 'B' : 'A';
+    entry.shelf = Math.min(5, Math.max(1, Number(data.shelf) || 1));
+    entry.order = ids(data.order);
+    entry.removed = ids(data.removed);
+    entry.pending = !entry.order.length;
+    if (entry.pending && !data.photo) throw new HttpError(400, 'Falta la foto del estante.');
+  } else if (type === 'fix') {
     entry.bookId = text(data.bookId, 48);
     entry.originalTitle = text(data.originalTitle, 160);
     entry.originalAuthor = text(data.originalAuthor, 120);

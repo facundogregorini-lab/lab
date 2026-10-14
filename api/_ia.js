@@ -67,4 +67,63 @@ async function analyze(input) {
   return { ...data, model: response.model, usage: response.usage };
 }
 
-module.exports = { analyze, enabled, MODEL };
+// ---------- Foto de un estante: leer los lomos en orden y reconocerlos en el catálogo ----------
+const SHELF_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['spines'],
+  properties: {
+    spines: {
+      type: 'array',
+      description: 'Lomos visibles, de izquierda a derecha.',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['title', 'author', 'match', 'confidence'],
+        properties: {
+          title: { type: 'string', description: 'Título leído en el lomo (o el del catálogo si coincide).' },
+          author: { type: 'string', description: 'Autor leído; vacío si no se ve.' },
+          match: { type: 'string', description: 'id del catálogo que corresponde a este lomo, o vacío si no está en el catálogo.' },
+          confidence: { type: 'string', enum: ['alta', 'media', 'baja'] },
+        },
+      },
+    },
+  },
+};
+
+const SHELF_SYSTEM = `Leés fotos de estantes de la biblioteca de una familia argentina.
+Listá TODOS los lomos de libros visibles, en orden de izquierda a derecha, sin saltear ninguno.
+Para cada lomo, buscá en el catálogo (líneas "id | título | autor") el libro que corresponde y poné su id en "match".
+Si un lomo no está en el catálogo, dejá "match" vacío y escribí el título y autor que se leen.
+No inventes: si un lomo no se lee, poné lo que se vea con confidence "baja". Ignorá adornos, estatuas y objetos que no sean libros.`;
+
+// catalog: [{ id, t, a }], shelfIds: ids que hoy están en ese estante (van primero para ayudar a la IA)
+async function analyzeShelf({ photo, catalog, shelfIds }) {
+  const match = /^data:(image\/(?:jpeg|webp));base64,(.+)$/.exec(photo || '');
+  if (!match) throw new Error('Falta la foto del estante.');
+  if (process.env.BIBLIO_IA_FAKE === '1') {
+    const here = shelfIds.slice(0, 3).reverse().map(id => catalog.find(b => b.id === id)).filter(Boolean);
+    return { spines: [...here.map(b => ({ title: b.t, author: b.a, match: b.id, confidence: 'alta' })), { title: 'El Eternauta', author: 'Héctor G. Oesterheld', match: '', confidence: 'media' }], model: 'fake', usage: null };
+  }
+  const inShelf = new Set(shelfIds);
+  const lines = [...catalog.filter(b => inShelf.has(b.id)), ...catalog.filter(b => !inShelf.has(b.id))].map(b => `${b.id} | ${b.t} | ${b.a}`);
+  const client = new Anthropic();
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 12000,
+    system: [{ type: 'text', text: SHELF_SYSTEM }],
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: SHELF_SCHEMA } },
+    messages: [{ role: 'user', content: [
+      { type: 'image', source: { type: 'base64', media_type: match[1], data: match[2] } },
+      { type: 'text', text: `Catálogo (primero los libros que hoy figuran en este estante):\n${lines.join('\n')}` },
+    ] }],
+  });
+  if (response.stop_reason === 'refusal') throw new Error('La IA no pudo procesar la foto.');
+  if (response.stop_reason === 'max_tokens') throw new Error('La respuesta de la IA quedó cortada: probá con una foto de menos libros.');
+  const data = JSON.parse(response.content.filter(b => b.type === 'text').map(b => b.text).join(''));
+  const ids = new Set(catalog.map(b => b.id));
+  for (const sp of data.spines) if (!ids.has(sp.match)) sp.match = '';
+  return { spines: data.spines, model: response.model, usage: response.usage };
+}
+
+module.exports = { analyze, analyzeShelf, enabled, MODEL };

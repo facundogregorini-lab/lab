@@ -1,7 +1,7 @@
 // Biblioteca El Regreso: completa un aporte con IA (lee la foto, corrige título y autor, escribe los resúmenes).
 // GET: { enabled, model } · GET ?resumen=<aporteId>: { corto, largo } · POST { id }: { aporte } (requiere cuenta)
 const { redis, HttpError, requireUser, body, handler } = require('./_lib');
-const { analyze, enabled, MODEL } = require('./_ia');
+const { analyze, analyzeShelf, enabled, MODEL } = require('./_ia');
 
 const KEY = 'biblio:aportes', DAILY_LIMIT = 40;
 const today = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
@@ -24,7 +24,22 @@ module.exports = handler(async req => {
   if (used === 1) await redis('EXPIRE', countKey, 2 * 86400);
   if (used > DAILY_LIMIT) throw new HttpError(429, 'Llegaste al máximo de análisis con IA por hoy. Probá mañana.');
 
-  const id = String(body(req).id || '');
+  const data = body(req);
+  if (data.action === 'shelf') {
+    const catalog = (Array.isArray(data.catalog) ? data.catalog : []).slice(0, 2000)
+      .filter(b => b && /^[a-z0-9-]{1,48}$/.test(b.id)).map(b => ({ id: b.id, t: String(b.t || '').slice(0, 160), a: String(b.a || '').slice(0, 120) }));
+    const shelfIds = (Array.isArray(data.shelfIds) ? data.shelfIds : []).map(String).slice(0, 200);
+    if (typeof data.photo !== 'string' || data.photo.length > 900_000) throw new HttpError(413, 'La foto es demasiado grande.');
+    try {
+      const result = await analyzeShelf({ photo: data.photo, catalog, shelfIds });
+      if (result.usage) console.log('IA estante tokens', JSON.stringify({ in: result.usage.input_tokens, out: result.usage.output_tokens }));
+      return { spines: result.spines };
+    } catch (error) {
+      console.error('IA estante', error.message);
+      throw new HttpError(502, error.message.startsWith('La ') || error.message.startsWith('Falta') ? error.message : 'La IA no respondió. Probá de nuevo en un rato.');
+    }
+  }
+  const id = String(data.id || '');
   const list = JSON.parse(await redis('GET', KEY) || '[]');
   const aporte = list.find(a => a.id === id);
   if (!aporte) throw new HttpError(404, 'Ese aporte ya no existe.');

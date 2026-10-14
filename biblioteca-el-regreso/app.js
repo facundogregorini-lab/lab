@@ -34,17 +34,21 @@
 
   // ---------- Índice: orden físico, aportes y búsqueda ----------
   let order = [];
+  const baseItems = new Map(shelves.map(s => [s, s.items.slice()]));
   function indexBooks() {
-    // Libros nuevos: se agregan al final del estante elegido.
-    for (const s of shelves) s.items = s.items.filter(i => !(i.id && books[i.id]?.nuevo));
+    // Se parte siempre del orden original y se aplican los aportes en orden cronológico.
+    for (const s of shelves) s.items = baseItems.get(s).slice();
     for (const id of Object.keys(books)) if (books[id].nuevo) delete books[id];
-    for (const b of Object.values(books)) Object.assign(b, base[b.id], { fix: null, aiSummary: null });
+    for (const b of Object.values(books)) Object.assign(b, base[b.id], { fix: null, aiSummary: null, retirado: null, moved: null });
+    state.retirados = [];
     for (const a of state.aportes) {
       if (a.type === 'new') {
         const b = newBook(a);
         books[b.id] = b;
         const shelf = shelves.find(s => s.bookcase === b.bookcase && s.n === b.shelf) || shelves[0];
         shelf.items.push({ id: b.id });
+      } else if (a.type === 'shelf') {
+        if (!a.pending) applyShelf(a);
       } else if (books[a.bookId]) {
         const b = books[a.bookId];
         b.fix = [...(b.fix || []), a];
@@ -57,9 +61,26 @@
     order = [];
     for (const shelf of shelves) {
       let place = 0;
-      for (const item of shelf.items) if (item.id) { const b = books[item.id]; b.place = ++place; b.index = order.length; order.push(b); }
+      for (const item of shelf.items) if (item.id) { const b = books[item.id]; Object.assign(b, { bookcase: shelf.bookcase, shelf: shelf.n, place: ++place, index: order.length }); order.push(b); }
     }
     for (const b of order) b.search = fold([b.t, b.a, base[b.id]?.t, categories[b.c]?.name, b.y].join(' '));
+  }
+  // Una foto de estante revisada: el estante queda con el orden indicado; los libros que vinieron de otro estante salen de allá.
+  function applyShelf(a) {
+    const target = shelves.find(s => s.bookcase === a.bookcase && s.n === a.shelf);
+    if (!target) return;
+    const wanted = a.order.filter(id => books[id]), set = new Set([...wanted, ...a.removed]);
+    for (const s of shelves) {
+      if (s === target) continue;
+      const before = s.items.length;
+      s.items = s.items.filter(i => !(i.id && set.has(i.id)));
+      if (s.items.length !== before) for (const id of wanted) if (books[id] && !target.items.some(i => i.id === id)) books[id].moved = a;
+    }
+    const lead = [], tail = [], front = [];
+    target.items.forEach((i, n) => { if (!i.decor) return; if (i.front != null) front.push(i); else (n === 0 ? lead : tail).push(i); });
+    const kept = target.items.filter(i => i.id && !set.has(i.id)).map(i => i.id);
+    target.items = [...lead, ...wanted.map(id => ({ id })), ...kept.map(id => ({ id })), ...tail, ...front];
+    for (const id of a.removed) if (books[id]) { books[id].retirado = a; state.retirados.push(books[id]); }
   }
   function newBook(a) {
     const color = a.color || shade(categories[a.category]?.color || '#8a6d4a', -.25);
@@ -164,7 +185,11 @@
     setView(t.dataset.view === 'shelves' ? state.lastCase || 'A' : t.dataset.view);
     if (mobile()) scrollTo({ top: 0 });
   });
-  document.addEventListener('click', e => { if (e.target.closest('[data-new-book]')) openForm('new'); });
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-new-book]')) openForm('new');
+    const sh = e.target.closest('[data-shelf-photo]');
+    if (sh) openForm('shelf', sh.dataset.shelfPhoto || ((state.view === 'B' ? 'B' : 'A') + '1'));
+  });
 
   // ---------- Filtros ----------
   function matches(b) {
@@ -339,6 +364,7 @@
           ${b.fam ? '<p class="note fam">✒️ Escrito por un Gregorini: autor de la familia.</p>' : ''}
           ${b.q > 1 ? `<div class="note doubt"><p><b>${b.q === 3 ? 'Identificación dudosa' : 'Identificación probable'}.</b> El lomo no se lee completo en la foto. ¿Lo tenés a mano? Sacale una foto y corregilo.</p><button type="button" class="btn-fix" data-fix>📷 Rectificar con una foto</button></div>` : ''}
           ${fixes.length ? `<div class="note fixed">${fixes.map(f => `<p>✏️ <b>Corregido por ${by(f)}</b>${f.title || f.author ? `: antes figuraba como «${esc(base[id]?.t)}» de ${esc(base[id]?.a)}` : ''}.${f.ai ? ` 🤖 La IA leyó «${esc(f.ai.title)}»${f.ai.author ? ' de ' + esc(f.ai.author) : ''}${f.ai.confident ? '' : ' (no está segura)'}.` : ''}${f.note ? ` «${esc(f.note)}»` : ''}${f.photo ? ` <button type="button" class="link" data-show-photo="${f.id}">Ver foto</button>` : ''}${f.by === state.name ? ` · <button type="button" class="link" data-del-aporte="${f.id}">Deshacer</button>` : ''}</p>`).join('')}<div class="fix-photo" id="fixPhoto"></div></div>` : ''}
+          ${b.moved ? `<p class="note">↪ Lo cambió de estante ${by(b.moved)}, con una foto.</p>` : ''}
           ${b.dup ? `<p class="note">📚 Hay otro ejemplar en la biblioteca: <button type="button" class="link" data-open="${b.dup}">ver dónde está</button>.</p>` : ''}
           ${b.nuevo && !data ? '' : `<div class="seg seg-small" role="group" aria-label="Resumen">${Object.entries(LEN).map(([k, v]) => `<button type="button" data-len="${k}" aria-pressed="${k === state.len}">${v}<small>${k === 'corto' ? '2 min' : '7 min'}</small></button>`).join('')}</div>`}
           ${sum}
@@ -563,13 +589,13 @@
   }
 
   // Achica la foto (máx. 1280 px) y calcula su color dominante para pintar el lomo.
-  function readPhoto(file) {
+  function readPhoto(file, max = 1280) {
     return new Promise((resolve, reject) => {
       if (!file || !/^image\//.test(file.type)) return reject(new Error('Elegí una imagen.'));
       const url = URL.createObjectURL(file), img = new Image();
       img.onload = () => {
         URL.revokeObjectURL(url);
-        const scale = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight));
+        const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
         const c = document.createElement('canvas');
         c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
         const ctx = c.getContext('2d');
@@ -613,8 +639,9 @@
     if (!state.token && state.server !== false) {
       afterLogin = () => openForm(type, bookId);
       if (dialog.open) dialog.close();
-      return openLogin(type === 'fix' ? 'Entrá con tu cuenta para rectificar un libro.' : 'Entrá con tu cuenta para sumar un libro nuevo.');
+      return openLogin(type === 'fix' ? 'Entrá con tu cuenta para rectificar un libro.' : type === 'shelf' ? 'Entrá con tu cuenta para actualizar un estante.' : 'Entrá con tu cuenta para sumar un libro nuevo.');
     }
+    if (type === 'shelf') return openShelfForm(bookId);
     formPhoto = null;
     const b = bookId && books[bookId];
     const options = (bc, n) => [1, 2, 3, 4, 5].map(i => `<option value="${bc}${i}" ${bc + i === n ? 'selected' : ''}>${bc === 'A' ? 'Biblioteca I' : 'Biblioteca II'} · estante ${i}</option>`).join('');
@@ -650,6 +677,129 @@
     formDialog.dataset.book = bookId || '';
     if (!formDialog.open) formDialog.showModal();
   }
+  // ---------- Foto de un estante: la IA lee los lomos y se revisan los cambios ----------
+  let shelfPlan = null;
+  const shelfOf = key => shelves.find(s => s.bookcase === key[0] && s.n === Number(key[1]));
+  const shelfName = key => `${key[0] === 'A' ? 'Biblioteca I' : 'Biblioteca II'} · estante ${key[1]}`;
+  function openShelfForm(key) {
+    formPhoto = null; shelfPlan = null;
+    const opts = ['A', 'B'].flatMap(bc => [1, 2, 3, 4, 5].map(n => `<option value="${bc}${n}" ${bc + n === key ? 'selected' : ''}>${shelfName(bc + n)}</option>`)).join('');
+    $('formBody').innerHTML = `
+      <div class="sheet-bar"><button type="button" class="close" data-close-form aria-label="Cerrar">×</button><span class="grab" aria-hidden="true"></span></div>
+      <h2>📷 Actualizar un estante</h2>
+      <p class="muted">¿Llegaron libros o cambió el orden? Sacale una foto al estante (entero o una parte), de frente y con buena luz. ${state.ia ? 'La IA lee los lomos y te muestra los cambios para que los confirmes.' : 'La foto queda guardada para procesarla: cuando se active la IA, se actualiza el estante.'}</p>
+      <form id="shelfForm" class="aporte" novalidate>
+        <label>¿Qué estante es? <select name="shelf">${opts}</select></label>
+        <div class="photo-pick">
+          <div class="photo-preview tall" id="photoPreview"><span>Foto del estante</span></div>
+          <div class="photo-btns">
+            <label class="btn-photo">📷 Sacar foto<input type="file" accept="image/*" capture="environment" id="camInput"></label>
+            <label class="btn-photo alt">🖼️ Importar imagen<input type="file" accept="image/*" id="fileInput"></label>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" name="full"> La foto muestra el estante completo</label>
+        <p class="error" id="formError" role="alert"></p>
+        <button class="primary big" type="button" data-shelf-analyze>${state.ia ? '🤖 Leer los lomos' : 'Guardar la foto'}</button>
+      </form>
+      <div id="shelfReview"></div>`;
+    formDialog.dataset.type = 'shelf';
+    formDialog.dataset.book = '';
+    if (!formDialog.open) formDialog.showModal();
+  }
+  async function analyzeShelfPhoto() {
+    const f = $('shelfForm'), key = f.elements.shelf.value, full = f.elements.full.checked;
+    if (!formPhoto) return $('formError').textContent = 'Primero sacá o importá la foto del estante.';
+    const button = f.querySelector('[data-shelf-analyze]');
+    button.disabled = true;
+    $('formError').textContent = '';
+    if (!state.ia || state.server === false) {
+      // Sin IA: la foto queda pendiente para procesarla más adelante.
+      button.textContent = 'Guardando…';
+      try {
+        const { aporte } = await api('aportes', { action: 'add', type: 'shelf', bookcase: key[0], shelf: Number(key[1]), order: [], removed: [], photo: formPhoto.data });
+        state.aportes.push(aporte);
+        formDialog.close();
+        toast('Foto guardada. El estante se actualiza cuando se active la IA.');
+      } catch (err) { $('formError').textContent = err.message; button.disabled = false; button.textContent = 'Guardar la foto'; }
+      return;
+    }
+    button.textContent = '🤖 Leyendo los lomos… (puede tardar un minuto)';
+    button.classList.add('ia-busy');
+    const current = shelfOf(key).items.filter(i => i.id).map(i => i.id);
+    try {
+      const { spines } = await api('ia', { action: 'shelf', photo: formPhoto.data, shelfIds: current, catalog: order.map(b => ({ id: b.id, t: b.t, a: b.a })) });
+      shelfPlan = { key, full, current, spines: spines.map((sp, i) => ({ ...sp, i, take: true, category: 'clasicos' })) };
+      renderShelfReview();
+    } catch (err) { $('formError').textContent = err.message; }
+    button.disabled = false; button.classList.remove('ia-busy'); button.textContent = '🤖 Volver a leer los lomos';
+  }
+  function renderShelfReview() {
+    const p = shelfPlan, here = new Set(p.current), seen = new Set(p.spines.map(sp => sp.match).filter(Boolean));
+    const missing = p.full ? p.current.filter(id => !seen.has(id)) : [];
+    p.missing = missing.map(id => ({ id, take: p.missing?.find(m => m.id === id)?.take ?? false }));
+    const kind = sp => !sp.match ? 'new' : here.has(sp.match) ? 'ok' : 'moved';
+    const label = { ok: '✓ En su lugar', moved: '↪ Viene de otro estante', new: '＋ Libro nuevo' };
+    const counts = { ok: 0, moved: 0, new: 0 };
+    p.spines.forEach(sp => counts[kind(sp)]++);
+    const reordered = p.spines.filter(sp => kind(sp) === 'ok').map(sp => sp.match).join() !== p.current.filter(id => seen.has(id)).join();
+    $('shelfReview').innerHTML = `
+      <h3 class="review-title">Lo que se ve en la foto</h3>
+      <p class="muted small">${p.spines.length} lomos leídos: ${counts.ok} en su lugar, ${counts.moved} de otro estante y ${counts.new} nuevos.${reordered ? ' <b>El orden cambió.</b>' : ''} Destildá lo que la IA leyó mal.</p>
+      <ol class="spines">${p.spines.map(sp => {
+        const k = kind(sp), b = books[sp.match];
+        return `<li class="spine-row k-${k}"><label class="check"><input type="checkbox" data-spine="${sp.i}" ${sp.take ? 'checked' : ''}>
+          <span><b>${esc(b ? b.t : sp.title)}</b><small>${esc(b ? b.a : sp.author || 'Autor sin leer')}${k === 'moved' ? ` · estaba en ${shelfName(b.bookcase + b.shelf)}` : ''}${sp.confidence === 'baja' ? ' · ⚠️ lectura dudosa' : ''}</small></span></label>
+          <span class="tag">${label[k]}</span>
+          ${k === 'new' ? `<select data-spine-cat="${sp.i}" aria-label="Categoría">${Object.entries(categories).map(([id, c]) => `<option value="${id}" ${sp.category === id ? 'selected' : ''}>${c.icon} ${esc(c.name)}</option>`).join('')}</select>` : ''}</li>`;
+      }).join('')}</ol>
+      ${missing.length ? `<h3 class="review-title">No aparecen en la foto</h3><p class="muted small">Tildá los que ya no están en la biblioteca. Los que no tildes quedan en el estante, al final.</p>
+        <ul class="spines">${p.missing.map(m => `<li class="spine-row k-gone"><label class="check"><input type="checkbox" data-missing="${m.id}" ${m.take ? 'checked' : ''}><span><b>${esc(books[m.id].t)}</b><small>${esc(books[m.id].a)}</small></span></label><span class="tag">Ya no está</span></li>`).join('')}</ul>` : ''}
+      <button class="primary big" type="button" data-shelf-apply>Aplicar cambios al estante</button>`;
+    $('shelfReview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  async function applyShelfPlan(button) {
+    const p = shelfPlan, take = p.spines.filter(sp => sp.take);
+    button.disabled = true; button.textContent = 'Guardando…';
+    try {
+      // 1) Libros nuevos: se crean como aportes y se ubican según la foto.
+      const ids = [];
+      for (const sp of take) {
+        if (sp.match) { ids.push(sp.match); continue; }
+        const { aporte } = await api('aportes', { action: 'add', type: 'new', title: sp.title || 'Libro sin título', author: sp.author, category: sp.category, bookcase: p.key[0], shelf: Number(p.key[1]), note: 'Sumado desde una foto del estante.' });
+        state.aportes.push(aporte);
+        ids.push('n-' + aporte.id);
+      }
+      // 2) Orden final: si la foto es una parte del estante, ese tramo reemplaza su lugar en el orden actual.
+      const removed = p.missing.filter(m => m.take).map(m => m.id), inPhoto = new Set(ids);
+      const rest = p.current.filter(id => !inPhoto.has(id) && !removed.includes(id));
+      const firstHere = p.current.findIndex(id => inPhoto.has(id));
+      const at = p.full ? 0 : firstHere < 0 ? rest.length : p.current.slice(0, firstHere).filter(id => !inPhoto.has(id) && !removed.includes(id)).length;
+      const finalOrder = [...rest.slice(0, at), ...ids, ...rest.slice(at)];
+      const { aporte } = await api('aportes', { action: 'add', type: 'shelf', bookcase: p.key[0], shelf: Number(p.key[1]), order: finalOrder, removed, photo: formPhoto.data });
+      state.aportes.push(aporte);
+      formDialog.close();
+      rebuild();
+      setView(p.key[0]);
+      const added = ids.filter(id => id.startsWith('n-')).length;
+      toast(`Estante actualizado${added ? `: ${added} ${added === 1 ? 'libro nuevo' : 'libros nuevos'}` : ''}${removed.length ? `, ${removed.length} retirados` : ''}.`);
+      if (state.ia) for (const a of state.aportes.filter(a => a.type === 'new' && ids.includes('n-' + a.id) && !a.ai)) runIA(a.id);
+    } catch (err) {
+      button.disabled = false; button.textContent = 'Aplicar cambios al estante';
+      toast('No se pudo guardar: ' + err.message);
+    }
+  }
+  formDialog.addEventListener('click', e => {
+    if (e.target.closest('[data-shelf-analyze]')) analyzeShelfPhoto();
+    const apply = e.target.closest('[data-shelf-apply]');
+    if (apply) applyShelfPlan(apply);
+  });
+  formDialog.addEventListener('change', e => {
+    const sp = e.target.dataset.spine, cat = e.target.dataset.spineCat, miss = e.target.dataset.missing;
+    if (sp != null) shelfPlan.spines[sp].take = e.target.checked;
+    if (cat != null) shelfPlan.spines[cat].category = e.target.value;
+    if (miss) shelfPlan.missing.find(m => m.id === miss).take = e.target.checked;
+  });
+
   formDialog.addEventListener('click', e => { if (e.target === formDialog || e.target.closest('[data-close-form]')) formDialog.close(); });
   formDialog.addEventListener('change', async e => {
     if (!e.target.matches('#camInput, #fileInput')) return;
@@ -659,7 +809,7 @@
     $('formError').textContent = '';
     $('photoPreview').classList.add('busy');
     try {
-      formPhoto = await readPhoto(file);
+      formPhoto = await readPhoto(file, formDialog.dataset.type === 'shelf' ? 1568 : 1280);
       $('photoPreview').innerHTML = `<img src="${formPhoto.data}" alt="Foto elegida"><button type="button" class="photo-x" data-clear-photo aria-label="Quitar foto">×</button>`;
     } catch (err) { $('formError').textContent = err.message; }
     $('photoPreview').classList.remove('busy');
@@ -671,6 +821,7 @@
   });
   formDialog.addEventListener('submit', async e => {
     e.preventDefault();
+    if (formDialog.dataset.type === 'shelf') return;
     const f = e.target, type = formDialog.dataset.type, bookId = formDialog.dataset.book;
     const val = n => f.elements[n]?.value.trim() || '';
     const payload = { action: 'add', type, note: val('note') };
@@ -774,9 +925,11 @@
         </section>
         <section class="panel"><h3>Lectores de la familia</h3>${readers.length ? `<ol class="authors">${readers.map(r => `<li><span>${esc(r.name)}</span><span>${r.leido} leídos · ${r.leyendo} leyendo · ${r.quiero} quiere</span></li>`).join('')}</ol>` : `<p class="muted">${!state.token ? 'Cuando cada uno entre con su cuenta y marque libros, acá aparece quién leyó qué.' : 'Todavía nadie marcó libros.'}</p>`}</section>
         <section class="panel"><h3>Últimos aportes</h3>${recent.length ? `<ul class="doubt">${recent.map(a => {
+          if (a.type === 'shelf') return `<li>📷 <button type="button" class="link" data-shelf-go="${a.bookcase}">${shelfName(a.bookcase + a.shelf)}</button> <span class="muted">${a.pending ? 'foto pendiente de procesar' : 'actualizado'} por ${by(a)}</span></li>`;
           const id = a.type === 'new' ? 'n-' + a.id : a.bookId;
           return `<li>${a.type === 'new' ? '＋' : '✏️'} <button type="button" class="link" data-open-book="${id}">${esc(books[id]?.t || a.title)}</button> <span class="muted">${a.type === 'new' ? 'sumado' : 'corregido'} por ${by(a)}</span></li>`;
-        }).join('')}</ul>` : '<p class="muted">Todavía nadie sumó ni corrigió libros.</p>'}<button type="button" class="ghost" data-new-book>＋ Sumar un libro nuevo</button></section>
+        }).join('')}</ul>` : '<p class="muted">Todavía nadie sumó ni corrigió libros.</p>'}<div class="tools"><button type="button" class="ghost" data-new-book>＋ Sumar un libro nuevo</button><button type="button" class="ghost" data-shelf-photo>📷 Actualizar un estante</button></div></section>
+        ${state.retirados?.length ? `<section class="panel"><h3>Ya no están <small>${state.retirados.length}</small></h3><ul class="doubt">${state.retirados.map(b => `<li>${esc(b.t)} <span class="muted">${esc(b.a)} · sacado por ${by(b.retirado)}</span></li>`).join('')}</ul></section>` : ''}
         <section class="panel"><h3>Por confirmar <small>${doubt.length}</small></h3><p class="muted small">Lomos que no se leen del todo en las fotos. Abrí uno y tocá <b>Rectificar con una foto</b>.</p><ul class="doubt">${doubt.map(b => `<li><button type="button" class="link" data-open-book="${b.id}">${esc(b.t)}</button> <span class="muted">${esc(b.a)}</span></li>`).join('')}</ul></section>
         <section class="panel"><h3>Autores con más libros</h3><ol class="authors">${topAuthors.map(([a, n]) => `<li><button type="button" class="link" data-author="${esc(a)}">${esc(a)}</button><span>${n}</span></li>`).join('')}</ol></section>
       </div>`;
@@ -786,6 +939,8 @@
     if (cat) { state.cat = cat.dataset.catGo; setView(order.find(b => b.c === state.cat).bookcase); }
     if (author) { state.q = author.dataset.author; $('search').value = state.q; setView('catalog'); }
     if (open && books[open.dataset.openBook]) openBook(open.dataset.openBook);
+    const go = e.target.closest('[data-shelf-go]');
+    if (go) setView(go.dataset.shelfGo);
   });
 
   // ---------- Fotos ----------
