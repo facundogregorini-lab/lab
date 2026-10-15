@@ -165,25 +165,6 @@
 
   // Visor de imágenes
   var lb = $('#lb'), lbImg = $('img', lb), lbCap = $('.lb__cap', lb), group = [], idx = 0, opener = null;
-  // En el celular vertical, los antes/después se muestran uno arriba del otro para que se vean grandes
-  var lbBa = $('.lb__ba', lb), halves = $$('.lb__half', lb);
-  var stackMq = matchMedia('(max-width: 760px) and (orientation: portrait)');
-  function setSplit(b) {
-    var sp = b.dataset.split, on = !!sp && stackMq.matches;
-    lbImg.hidden = on; lbBa.hidden = !on;
-    if (!on) return false;
-    var w = +$('img', b).getAttribute('width'), h = +$('img', b).getAttribute('height');
-    var cut = sp.split(',').map(Number);
-    [[0, cut[0]], [cut[1], w]].forEach(function (r, i) {
-      var hw = r[1] - r[0], el = halves[i], im = $('img', el);
-      el.style.setProperty('--ar', hw / h);
-      el.style.setProperty('--k', w / hw);
-      el.style.setProperty('--o', r[0] / hw);
-      im.src = b.dataset.full;
-      im.alt = (i ? 'Después: ' : 'Antes: ') + caption(b);
-    });
-    return true;
-  }
   function caption(btn) {
     var fig = btn.closest('figure');
     var c = fig && $('figcaption', fig);
@@ -192,7 +173,7 @@
   function show(i) {
     idx = (i + group.length) % group.length;
     var b = group[idx];
-    if (!setSplit(b)) lbImg.src = b.dataset.full;
+    lbImg.src = b.dataset.full;
     lbImg.alt = $('img', b).alt;
     lbCap.textContent = caption(b) + (group.length > 1 ? '  ·  ' + (idx + 1) + ' / ' + group.length : '');
   }
@@ -216,8 +197,6 @@
     if (e.key === 'ArrowLeft') show(idx - 1);
   });
   lb.addEventListener('close', function () { lbImg.removeAttribute('src'); if (opener) opener.focus(); });
-  function reflow() { if (lb.open) show(idx); }
-  if (stackMq.addEventListener) stackMq.addEventListener('change', reflow); else stackMq.addListener(reflow);
   var tx = null;
   lb.addEventListener('touchstart', function (e) { tx = e.touches[0].clientX; }, { passive: true });
   lb.addEventListener('touchend', function (e) {
