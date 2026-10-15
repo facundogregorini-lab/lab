@@ -156,8 +156,6 @@
   more.addEventListener('click', function () {
     cases.dataset.open = '1';
     collapse();
-    var f = figs.filter(function (g) { return !g.hidden; })[6];
-    if (f) { var b = $('.zoom', f); b.focus({ preventScroll: true }); }
   });
   fbtn.forEach(function (b) { b.addEventListener('click', collapse); });
   if (mq.addEventListener) mq.addEventListener('change', collapse);

@@ -8,7 +8,7 @@ Web del consultorio (Aráoz 2879, 1° D, Buenos Aires), hecha a partir del bocet
 - **El consultorio**: galería (se amplía al tocar) y recorrido en video; los videos cargan y se reproducen solo cuando están en pantalla.
 - **Tratamientos**: operatoria, rehabilitación oral (destacada), mantenimiento periodontal y tecnología digital, y cómo es la atención.
 - **Planificación digital**: los dos casos (implante inmediato y diseño de sonrisa) en pestañas, paso a paso. Las fotos de la cirugía quedan difuminadas hasta que la persona elige verlas.
-- **Casos clínicos**: 20 casos de antes y después con filtros y visor a pantalla completa (flechas del teclado o deslizar en el celular).
+- **Casos clínicos**: 20 casos de antes y después con filtros (las fotos de los casos no se amplían).
 - **Equipo**: la historia desde 1969 y los profesionales.
 - **Contacto**: WhatsApp, mail, reseñas en Google Maps y mapa.
 
