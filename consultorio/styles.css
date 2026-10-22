@@ -101,6 +101,8 @@ figcaption{font-size:.92rem;color:var(--mute);padding-top:10px}
 .tour__b{grid-column:8/13}.tour__b .zoom{aspect-ratio:4/5}
 .tour__c{grid-column:1/6;margin-top:-12%}.tour__c .zoom{aspect-ratio:4/5}
 .tour__d{grid-column:6/13}.tour__d .zoom{aspect-ratio:4/3}
+.tour__e{grid-column:2/7}.tour__e .zoom{aspect-ratio:4/5}
+.tour__f{grid-column:7/12;margin-top:12%}.tour__f .zoom{aspect-ratio:4/5}
 
 .vtour{display:grid;grid-template-columns:1fr 2fr;gap:48px;align-items:center;margin-top:clamp(64px,8vw,110px)}
 .vtour__txt p{color:var(--mute);margin:12px 0 0;max-width:32ch}
