@@ -95,14 +95,13 @@ figure{margin:0}
 figcaption{font-size:.92rem;color:var(--mute);padding-top:10px}
 
 /* Tour */
-.tour{display:grid;grid-template-columns:repeat(12,1fr);gap:clamp(12px,2vw,24px);align-items:start}
-.tour .zoom{border-radius:var(--r)}
-.tour__a{grid-column:1/8}.tour__a .zoom{aspect-ratio:4/3}
-.tour__b{grid-column:8/13}.tour__b .zoom{aspect-ratio:4/5}
-.tour__c{grid-column:1/6;margin-top:-12%}.tour__c .zoom{aspect-ratio:4/5}
-.tour__d{grid-column:6/13}.tour__d .zoom{aspect-ratio:4/3}
-.tour__e{grid-column:2/7}.tour__e .zoom{aspect-ratio:4/5}
-.tour__f{grid-column:7/12;margin-top:12%}.tour__f .zoom{aspect-ratio:4/5}
+.tour{display:grid;grid-template-columns:repeat(11,1fr);gap:clamp(12px,2vw,24px)}
+.tour>figure{display:flex;flex-direction:column;margin:0}
+.tour .zoom{border-radius:var(--r);flex:1}
+.tour .zoom img{position:absolute;inset:0}
+.tour__a{grid-area:1/1/2/6}.tour__b{grid-area:1/6/2/9}.tour__c{grid-area:1/9/2/12}
+.tour__e{grid-area:2/1/3/4}.tour__d{grid-area:2/4/3/9}.tour__f{grid-area:2/9/3/12}
+.tour__a .zoom,.tour__d .zoom{aspect-ratio:4/3}
 
 .vtour{display:grid;grid-template-columns:1fr 2fr;gap:48px;align-items:center;margin-top:clamp(64px,8vw,110px)}
 .vtour__txt p{color:var(--mute);margin:12px 0 0;max-width:32ch}
