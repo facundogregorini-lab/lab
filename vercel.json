@@ -1,6 +1,15 @@
 {
   "headers": [
     {
+      "source": "/chapa-labs/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
       "source": "/consultorio/(.*)",
       "headers": [
         {
