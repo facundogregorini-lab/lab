@@ -2,6 +2,7 @@
   "headers": [
     {
       "source": "/consultorio/(.*)",
+      "missing": [{ "type": "host", "value": "odontoaraoz.com.ar" }],
       "headers": [
         {
           "key": "X-Robots-Tag",
