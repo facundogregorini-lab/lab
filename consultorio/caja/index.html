@@ -7,14 +7,20 @@
   <meta name="theme-color" content="#0F2240">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Caja">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/caja/manifest.webmanifest">
+  <link rel="icon" href="/caja/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/caja/apple-touch-icon.png">
   <title>Caja · Consultorio</title>
   <style>
-    html, body { margin: 0; height: 100%; background: #F7F5F0; }
-    iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
+    html, body { margin: 0; height: 100%; background: #0F2240; }
+    iframe { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; bottom: 0; width: 100%; height: calc(100% - env(safe-area-inset-top, 0px)); border: 0; background: #F7F5F0; }
   </style>
 </head>
 <body>
   <iframe src="https://script.google.com/macros/s/AKfycbzdezKOp_CRZSz6_T7GOz-_t-6MNpKvUt9CXLHptUfl8aKm26O3LWvlFyjepmYfHNHe/exec"
           title="Caja del consultorio" allow="camera; microphone; clipboard-write"></iframe>
+  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/caja/sw.js', { scope: '/caja/' });</script>
 </body>
 </html>
