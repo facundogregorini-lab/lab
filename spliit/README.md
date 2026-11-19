@@ -8,6 +8,7 @@ Es una copia modificada de [Spliit](https://github.com/spliit-app/spliit) (licen
 - **Siempre en español** salvo que se elija otro idioma en el selector.
 - **Grupos de a dos**: el formulario arranca con dos personas (se pueden agregar más).
 - **Pesos por defecto**: moneda propia con símbolo `$`. El peso argentino no está en la lista de cotizaciones de Spliit, así que no hay conversión entre monedas salvo que se configure `DEFAULT_CURRENCY_CODE` (por ejemplo `USD`).
+- **Gastos en dólares**: cada gasto se carga en pesos o en dólares (US$). No se convierte nada: los saldos y los reembolsos propuestos de cada moneda se calculan por separado, y "Marcar como pagado" registra el reembolso en la moneda de esa deuda. Se guarda en la columna `Expense.currencyCode` (vacía = pesos). El conversor de monedas de Spliit quedó fuera del formulario.
 - **Más simple**: solo las pestañas Gastos, Balances y Ajustes. Se sacaron del menú Información, Estadísticas y Actividad, el campo de información del grupo y el selector de categoría de los gastos (todos quedan como "General").
 
 ## Desplegar en Vercel

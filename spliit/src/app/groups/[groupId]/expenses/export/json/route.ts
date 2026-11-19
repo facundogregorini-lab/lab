@@ -24,6 +24,7 @@ export async function GET(
           title: true,
           category: { select: { grouping: true, name: true } },
           amount: true,
+          currencyCode: true,
           originalAmount: true,
           originalCurrency: true,
           conversionRate: true,

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Locale } from '@/i18n/request'
 import { getGroupExpenses } from '@/lib/api'
 import { Currency, getCurrency } from '@/lib/currency'
+import { getExpenseCurrency } from '@/lib/expense-currency'
 import { cn, formatCurrency, formatDateOnly } from '@/lib/utils'
 import { ChevronRight } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
@@ -61,6 +62,8 @@ export function ExpenseCard({
 }: Props) {
   const router = useRouter()
   const locale = useLocale() as Locale
+  // The group currency, or the one this expense was recorded in (e.g. US$).
+  const expenseCurrency = getExpenseCurrency(currency, expense.currencyCode)
 
   const originalAmount =
     expense.originalAmount != null &&
@@ -98,7 +101,9 @@ export function ExpenseCard({
           <Participants expense={expense} participantCount={participantCount} />
         </div>
         <div className="text-xs text-muted-foreground">
-          <ActiveUserBalance {...{ groupId, currency, expense }} />
+          <ActiveUserBalance
+            {...{ groupId, currency: expenseCurrency, expense }}
+          />
         </div>
       </div>
       <div className="flex flex-col justify-between items-end">
@@ -108,7 +113,7 @@ export function ExpenseCard({
             expense.isReimbursement ? 'italic' : 'font-bold',
           )}
         >
-          {formatCurrency(currency, expense.amount, locale)}
+          {formatCurrency(expenseCurrency, expense.amount, locale)}
         </div>
         {originalAmount && (
           <div className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">

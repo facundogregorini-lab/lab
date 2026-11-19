@@ -2,6 +2,7 @@
 
 import { BalancesList } from '@/app/groups/[groupId]/balances-list'
 import { ReimbursementList } from '@/app/groups/[groupId]/reimbursement-list'
+import { useExpenseCurrencyLabel } from '@/components/currency-label'
 import {
   Card,
   CardContent,
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TrackPage } from '@/lib/analytics/track-page'
+import { getExpenseCurrency } from '@/lib/expense-currency'
 import { getCurrencyFromGroup } from '@/lib/utils'
 import { trpc } from '@/trpc/client'
 import { useTranslations } from 'next-intl'
@@ -34,6 +36,12 @@ export default function BalancesAndReimbursements() {
   }, [utils])
 
   const isLoading = balancesAreLoading || !balancesData || !group
+  const groupCurrency = group ? getCurrencyFromGroup(group) : undefined
+  const currencyLabel = useExpenseCurrencyLabel(groupCurrency)
+  // Each currency has its own balances; when there is more than one, every
+  // section is titled with its currency.
+  const currencies = balancesData?.currencies ?? []
+  const showCurrencyTitles = currencies.length > 1
 
   return (
     <>
@@ -47,11 +55,25 @@ export default function BalancesAndReimbursements() {
           {isLoading ? (
             <BalancesLoading participantCount={group?.participants.length} />
           ) : (
-            <BalancesList
-              balances={balancesData.balances}
-              participants={group?.participants}
-              currency={getCurrencyFromGroup(group)}
-            />
+            currencies.map(({ currencyCode, balances }) => (
+              <section
+                key={currencyCode ?? ''}
+                data-testid="balances-currency"
+                data-currency={currencyCode ?? ''}
+                className="[&+&]:mt-6"
+              >
+                {showCurrencyTitles && (
+                  <h3 className="text-sm font-semibold mb-2">
+                    {currencyLabel(currencyCode)}
+                  </h3>
+                )}
+                <BalancesList
+                  balances={balances}
+                  participants={group?.participants}
+                  currency={getExpenseCurrency(groupCurrency!, currencyCode)}
+                />
+              </section>
+            ))
           )}
         </CardContent>
       </Card>
@@ -66,12 +88,27 @@ export default function BalancesAndReimbursements() {
               participantCount={group?.participants.length}
             />
           ) : (
-            <ReimbursementList
-              reimbursements={balancesData.reimbursements}
-              participants={group?.participants}
-              currency={getCurrencyFromGroup(group)}
-              groupId={groupId}
-            />
+            currencies.map(({ currencyCode, reimbursements }) => (
+              <section
+                key={currencyCode ?? ''}
+                data-testid="reimbursements-currency"
+                data-currency={currencyCode ?? ''}
+                className="[&+&]:mt-6"
+              >
+                {showCurrencyTitles && (
+                  <h3 className="text-sm font-semibold">
+                    {currencyLabel(currencyCode)}
+                  </h3>
+                )}
+                <ReimbursementList
+                  reimbursements={reimbursements}
+                  participants={group?.participants}
+                  currency={getExpenseCurrency(groupCurrency!, currencyCode)}
+                  currencyCode={currencyCode}
+                  groupId={groupId}
+                />
+              </section>
+            ))
           )}
         </CardContent>
       </Card>

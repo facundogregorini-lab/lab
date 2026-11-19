@@ -10,6 +10,8 @@ type Props = {
   reimbursements: Reimbursement[]
   participants: Participant[]
   currency: Currency
+  /** Set when these reimbursements are not in the group currency (e.g. USD). */
+  currencyCode?: string | null
   groupId: string
 }
 
@@ -17,6 +19,7 @@ export function ReimbursementList({
   reimbursements,
   participants,
   currency,
+  currencyCode,
   groupId,
 }: Props) {
   const locale = useLocale()
@@ -46,7 +49,9 @@ export function ReimbursementList({
             </div>
             <Button variant="link" asChild className="-mx-4 -my-3">
               <Link
-                href={`/groups/${groupId}/expenses/create?reimbursement=yes&from=${reimbursement.from}&to=${reimbursement.to}&amount=${reimbursement.amount}`}
+                href={`/groups/${groupId}/expenses/create?reimbursement=yes&from=${reimbursement.from}&to=${reimbursement.to}&amount=${reimbursement.amount}${
+                  currencyCode ? `&currency=${currencyCode}` : ''
+                }`}
               >
                 {t('markAsPaid')}
               </Link>

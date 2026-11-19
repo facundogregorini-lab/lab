@@ -4,6 +4,10 @@ import {
   RecurrenceRule,
   RecurringExpenseLink,
 } from '@/generated/prisma/client'
+import {
+  getExpenseCurrencyCodes,
+  normalizeExpenseCurrencyCode,
+} from '@/lib/expense-currency'
 import { prisma } from '@/lib/prisma'
 import { randomId } from '@/lib/random'
 import { ExpenseFormValues, GroupFormValues } from '@/lib/schemas'
@@ -51,6 +55,10 @@ export async function createExpense(
     if (!group.participants.some((p) => p.id === participant))
       throw new Error(`Invalid participant ID: ${participant}`)
   }
+  const currencyCode = getValidExpenseCurrencyCode(
+    expenseFormValues.currencyCode,
+    group.currencyCode,
+  )
 
   await logActivity(groupId, ActivityType.CREATE_EXPENSE, {
     participantId,
@@ -73,6 +81,7 @@ export async function createExpense(
       expenseDate: expenseFormValues.expenseDate,
       categoryId: expenseFormValues.category,
       amount: expenseFormValues.amount,
+      currencyCode,
       originalAmount: expenseFormValues.originalAmount,
       originalCurrency: expenseFormValues.originalCurrency,
       conversionRate: expenseFormValues.conversionRate,
@@ -109,6 +118,20 @@ export async function createExpense(
       notes: expenseFormValues.notes,
     },
   })
+}
+
+/**
+ * The currency code to store for an expense (`null` for the group currency),
+ * rejecting any currency the group does not offer.
+ */
+function getValidExpenseCurrencyCode(
+  currencyCode: string | null | undefined,
+  groupCurrencyCode: string | null,
+) {
+  const code = normalizeExpenseCurrencyCode(currencyCode, groupCurrencyCode)
+  if (!getExpenseCurrencyCodes(groupCurrencyCode).includes(code))
+    throw new Error(`Invalid currency: ${currencyCode}`)
+  return code
 }
 
 export async function deleteExpense(
@@ -182,6 +205,10 @@ export async function updateExpense(
     if (!group.participants.some((p) => p.id === participant))
       throw new Error(`Invalid participant ID: ${participant}`)
   }
+  const currencyCode = getValidExpenseCurrencyCode(
+    expenseFormValues.currencyCode,
+    group.currencyCode,
+  )
 
   await logActivity(groupId, ActivityType.UPDATE_EXPENSE, {
     participantId,
@@ -221,6 +248,7 @@ export async function updateExpense(
     data: {
       expenseDate: expenseFormValues.expenseDate,
       amount: expenseFormValues.amount,
+      currencyCode,
       originalAmount: expenseFormValues.originalAmount,
       originalCurrency: expenseFormValues.originalCurrency,
       conversionRate: expenseFormValues.conversionRate,
@@ -358,6 +386,7 @@ export async function getGroupExpenses(
   return prisma.expense.findMany({
     select: {
       amount: true,
+      currencyCode: true,
       category: true,
       createdAt: true,
       expenseDate: true,

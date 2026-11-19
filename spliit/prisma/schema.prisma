@@ -49,6 +49,10 @@ model Expense {
   category         Category?         @relation(fields: [categoryId], references: [id])
   categoryId       Int               @default(0)
   amount           Int
+  // Currency the expense is recorded in when it is not the group's (e.g. USD).
+  // Null means the group currency. Amounts are never converted: each currency
+  // keeps its own balances.
+  currencyCode     String?
   originalAmount   Int?
   originalCurrency String?
   conversionRate   Decimal?

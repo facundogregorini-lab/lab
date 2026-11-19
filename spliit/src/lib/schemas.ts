@@ -90,6 +90,8 @@ export const expenseFormSchema = z
           .refine((amount) => amount <= 10_000_000_00, 'amountTenMillion'),
       ])
       .optional(),
+    // Currency the amounts are in: empty for the group currency. Never converted.
+    currencyCode: z.union([z.string().length(3).nullish(), z.literal('')]),
     originalCurrency: z.union([z.string().length(3).nullish(), z.literal('')]),
     conversionRate: z
       .union([

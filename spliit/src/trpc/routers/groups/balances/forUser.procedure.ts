@@ -1,5 +1,6 @@
 import { getGroup, getGroupExpenses } from '@/lib/api'
 import { getBalances } from '@/lib/balances'
+import { groupExpensesByCurrency } from '@/lib/expense-currency'
 import { MAX_GROUPS_PER_QUERY } from '@/lib/group-query-limits'
 import { baseProcedure } from '@/trpc/init'
 import { z } from 'zod'
@@ -10,7 +11,8 @@ import { z } from 'zod'
  * The active user is tracked client-side (per group, in local storage), so the
  * client passes the list of `{ groupId, participantId }` pairs it knows about
  * and receives the participant's net balance in each group, together with the
- * group's currency so the client can group amounts by currency.
+ * group's currency so the client can group amounts by currency. A group with
+ * expenses in a second currency (dollars) gives one balance per currency.
  */
 export const forUserBalancesProcedure = baseProcedure
   .input(
@@ -37,19 +39,26 @@ export const forUserBalancesProcedure = baseProcedure
         if (!participant) return null
 
         const expenses = await getGroupExpenses(groupId)
-        const amount = getBalances(expenses)[participantId]?.total ?? 0
 
-        return {
-          groupId,
-          groupName: group.name,
-          currency: group.currency,
-          currencyCode: group.currencyCode,
-          participantId,
-          participantName: participant.name,
-          amount,
-        }
+        // One entry per currency the group has expenses in: amounts in
+        // different currencies are never added up.
+        return groupExpensesByCurrency(expenses, group.currencyCode).map(
+          ({ currencyCode, expenses }) => ({
+            groupId,
+            groupName: group.name,
+            currency: group.currency,
+            currencyCode: currencyCode ?? group.currencyCode,
+            participantId,
+            participantName: participant.name,
+            amount: getBalances(expenses)[participantId]?.total ?? 0,
+          }),
+        )
       }),
     )
 
-    return { balances: balances.filter((balance) => balance !== null) }
+    return {
+      balances: balances.flatMap((balance) =>
+        balance === null ? [] : balance,
+      ),
+    }
   })

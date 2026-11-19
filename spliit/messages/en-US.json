@@ -283,7 +283,11 @@
     "save": "Save",
     "saving": "Saving…",
     "cancel": "Cancel",
-    "reimbursement": "Reimbursement"
+    "reimbursement": "Reimbursement",
+    "currencyChoice": {
+      "label": "Currency",
+      "description": "Expenses in dollars are kept apart: they are not converted to pesos."
+    }
   },
   "ExpenseDocumentsInput": {
     "TooBigToast": {
@@ -560,7 +564,10 @@
     },
     "other": {
       "heading": "Other currencies"
-    }
+    },
+    "pesos": "Pesos",
+    "USD": "Dollars",
+    "label": "{name} ({symbol})"
   },
   "Pwa": {
     "updateTitle": "Update available",

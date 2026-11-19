@@ -1,5 +1,6 @@
 import { APP_NAME } from '@/lib/brand'
 import { getCurrency } from '@/lib/currency'
+import { getExpenseCurrency } from '@/lib/expense-currency'
 import { prisma } from '@/lib/prisma'
 import { getExpenseShares } from '@/lib/shares'
 import {
@@ -63,6 +64,7 @@ export async function GET(
           title: true,
           category: { select: { name: true } },
           amount: true,
+          currencyCode: true,
           originalAmount: true,
           originalCurrency: true,
           conversionRate: true,
@@ -123,16 +125,18 @@ export async function GET(
     })),
   ]
 
-  const currency = getCurrencyFromGroup(group)
+  const groupCurrency = getCurrencyFromGroup(group)
 
   const expenses = group.expenses.map((expense) => {
     const shares = getExpenseShares(expense)
+    // Expenses in dollars are exported as they are, without conversion.
+    const currency = getExpenseCurrency(groupCurrency, expense.currencyCode)
 
     return {
       date: formatDate(expense.expenseDate),
       title: escapeCsvFormula(expense.title),
       categoryName: escapeCsvFormula(expense.category?.name || ''),
-      currency: group.currencyCode ?? group.currency,
+      currency: expense.currencyCode || group.currencyCode || group.currency,
       amount: formatAmountAsDecimal(expense.amount, currency),
       originalAmount: expense.originalAmount
         ? formatAmountAsDecimal(

@@ -262,6 +262,10 @@
       "dateMismatch": "Tasas para la fecha: {date}",
       "refresh": "Actualizar",
       "customRate": "Utilizando tasa personalizada"
+    },
+    "currencyChoice": {
+      "label": "Moneda",
+      "description": "Los gastos en dólares se llevan aparte: no se convierten a pesos."
     }
   },
   "ExpenseDocumentsInput": {
@@ -514,7 +518,10 @@
     },
     "other": {
       "heading": "Otras monedas"
-    }
+    },
+    "pesos": "Pesos",
+    "USD": "Dólares",
+    "label": "{name} ({symbol})"
   },
   "Pwa": {
     "updateTitle": "Actualización disponible",
