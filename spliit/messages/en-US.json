@@ -334,6 +334,13 @@
       "noImbursements": "It looks like your group doesn’t need any reimbursement 😁",
       "owes": "<strong>{from}</strong> owes <strong>{to}</strong>",
       "markAsPaid": "Mark as paid"
+    },
+    "Totals": {
+      "title": "Total spent",
+      "description": "What the group’s expenses add up to, leaving reimbursements out. Each currency is counted separately.",
+      "total": "Total",
+      "paid": "paid",
+      "share": "share"
     }
   },
   "Stats": {

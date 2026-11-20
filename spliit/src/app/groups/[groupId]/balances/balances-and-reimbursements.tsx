@@ -19,6 +19,7 @@ import { useTranslations } from 'next-intl'
 import { Fragment, useEffect } from 'react'
 import { match } from 'ts-pattern'
 import { useCurrentGroup } from '../current-group-context'
+import { SpendingTotals } from './spending-totals'
 
 export default function BalancesAndReimbursements() {
   const utils = trpc.useUtils()
@@ -46,6 +47,37 @@ export default function BalancesAndReimbursements() {
   return (
     <>
       <TrackPage path={`/groups/${groupId}/balances`} />
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>{t('Totals.title')}</CardTitle>
+          <CardDescription>{t('Totals.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-6 w-40" />
+          ) : (
+            currencies.map(({ currencyCode, total, spending }) => (
+              <section
+                key={currencyCode ?? ''}
+                data-testid="totals-currency"
+                data-currency={currencyCode ?? ''}
+                className="[&+&]:mt-6"
+              >
+                {showCurrencyTitles && (
+                  <h3 className="text-sm font-semibold">
+                    {currencyLabel(currencyCode)}
+                  </h3>
+                )}
+                <SpendingTotals
+                  total={total}
+                  spending={spending}
+                  currency={getExpenseCurrency(groupCurrency!, currencyCode)}
+                />
+              </section>
+            ))
+          )}
+        </CardContent>
+      </Card>
       <Card className="mb-4">
         <CardHeader>
           <CardTitle>{t('title')}</CardTitle>

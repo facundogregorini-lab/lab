@@ -5,6 +5,7 @@ import {
   getSuggestedReimbursements,
 } from '@/lib/balances'
 import { groupExpensesByCurrency } from '@/lib/expense-currency'
+import { getSpendingByParticipant, getTotalGroupSpending } from '@/lib/totals'
 import { baseProcedure } from '@/trpc/init'
 import { z } from 'zod'
 
@@ -26,6 +27,9 @@ export const listGroupBalancesProcedure = baseProcedure
         currencyCode,
         balances: getPublicBalances(reimbursements),
         reimbursements,
+        // What was spent, leaving reimbursements out: they settle debts.
+        total: getTotalGroupSpending(expenses),
+        spending: getSpendingByParticipant(group?.participants ?? [], expenses),
       }
     })
 
