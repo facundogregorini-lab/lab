@@ -129,7 +129,6 @@ const minutes = ms => (ms ? Math.round(ms / 60000) : 0);
 // Películas y documentales: Wikidata (título en español, director, año, duración) + póster de Wikipedia.
 const WIKIDATA = 'https://www.wikidata.org/w/api.php?format=json&';
 const FILM_FILTER = 'haswbstatement:P31=Q11424|P31=Q24869|P31=Q93204|P31=Q202866|P31=Q506240|P31=Q226730';
-const DOC_FILTER = 'haswbstatement:P31=Q93204|P136=Q93204';
 
 async function pageImages(lang, titles) {
   if (!titles.length) return {};
@@ -152,7 +151,7 @@ async function pageImages(lang, titles) {
 }
 
 async function searchWikidataFilms(q, docs) {
-  const found = await getJSON(WIKIDATA + new URLSearchParams({ action: 'query', list: 'search', srsearch: q + ' ' + (docs ? DOC_FILTER : FILM_FILTER), srlimit: '12', srprop: '' }));
+  const found = await getJSON(WIKIDATA + new URLSearchParams({ action: 'query', list: 'search', srsearch: q + ' ' + FILM_FILTER + '|P136=Q93204', srlimit: '15', srprop: '' }));
   const ids = ((found.query && found.query.search) || []).map(r => r.title).filter(t => /^Q\d+$/.test(t));
   if (!ids.length) return [];
   const data = await getJSON(WIKIDATA + new URLSearchParams({ action: 'wbgetentities', ids: ids.join('|'), props: 'labels|claims|sitelinks', languages: 'es|en', sitefilter: 'eswiki|enwiki' }));
@@ -166,7 +165,9 @@ async function searchWikidataFilms(q, docs) {
     pageImages('en', entities.map(e => link(e, 'enwiki')).filter(Boolean)),
     pageImages('es', entities.map(e => link(e, 'eswiki')).filter(Boolean)),
   ]);
-  return entities.map(e => {
+  const isDoc = e => [...values(e, 'P31'), ...values(e, 'P136')].some(v => v.id === 'Q93204');
+  const ordered = docs ? [...entities.filter(isDoc), ...entities.filter(e => !isDoc(e))] : entities;
+  return ordered.map(e => {
     const years = values(e, 'P577').map(v => String(v.time || '').slice(1, 5)).filter(y => /^\d{4}$/.test(y)).sort();
     const dur = values(e, 'P2047')[0];
     let length = dur ? Number(dur.amount) : 0;
