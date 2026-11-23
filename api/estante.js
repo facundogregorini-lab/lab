@@ -152,18 +152,17 @@ async function pageImages(lang, titles) {
 
 async function searchWikidataFilms(q, docs) {
   // Por título (en español y en inglés) y por texto con filtro de tipo; primero lo que coincide con el título.
-  const byLabel = lang => getJSON(WIKIDATA + new URLSearchParams({ action: 'wbsearchentities', search: q, language: lang, uselang: lang, type: 'item', limit: '20' }));
+  const byLabel = lang => getJSON(WIKIDATA + new URLSearchParams({ action: 'wbsearchentities', search: q, language: lang, uselang: lang, type: 'item', limit: '50' }));
   const [es, en, text] = await Promise.allSettled([
     byLabel('es'), byLabel('en'),
-    getJSON(WIKIDATA + new URLSearchParams({ action: 'query', list: 'search', srsearch: q + ' ' + FILM_FILTER + '|P136=Q93204', srlimit: '15', srprop: '' })),
+    getJSON(WIKIDATA + new URLSearchParams({ action: 'query', list: 'search', srsearch: q + ' ' + FILM_FILTER + '|P136=Q93204', srlimit: '20', srprop: '' })),
   ]);
   for (const [name, r] of [['es', es], ['en', en], ['texto', text]]) if (r.status === 'rejected') console.error('Estante Wikidata ' + name + ':', r.reason?.message);
   if ([es, en, text].every(r => r.status === 'rejected')) throw es.reason;
-  console.log('Estante Wikidata', q, JSON.stringify([es, en].map(r => ((r.value && r.value.search) || []).map(x => x.id + ':' + (x.description || '')))));
   const FILMY = /pel[ií]cula|film|documental|documentary|movie|largometraje|cortometraje|miniserie|docuserie/i;
   const labelIds = [es, en].flatMap(r => (r.value && r.value.search) || []).filter(r => FILMY.test(r.description || '')).map(r => r.id);
   const textIds = ((text.value && text.value.query && text.value.query.search) || []).map(r => r.title);
-  const ids = [...new Set([...labelIds, ...textIds])].filter(t => /^Q\d+$/.test(t)).slice(0, 20);
+  const ids = [...new Set([...labelIds, ...textIds])].filter(t => /^Q\d+$/.test(t)).slice(0, 24);
   if (!ids.length) return [];
   const data = await getJSON(WIKIDATA + new URLSearchParams({ action: 'wbgetentities', ids: ids.join('|'), props: 'labels|claims|sitelinks', languages: 'es|en', sitefilter: 'eswiki|enwiki' }));
   const entities = ids.map(id => data.entities && data.entities[id]).filter(e => e && e.labels);
