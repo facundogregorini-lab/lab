@@ -22,6 +22,8 @@ Todo se guarda en el navegador (`localStorage`). Con la cuenta del Lab (`/api/au
 
 Las listas por categoría las arma la IA a partir de los libros más vendidos y leídos en español, y cada libro se busca en Open Library para sumar portada y páginas. Se generan una vez por mes por categoría y quedan en Redis, así que cuestan casi nada. Las recomendaciones requieren cuenta, usan los libros guardados en el servidor y tienen un tope de 6 por día por persona.
 
+Sin IA disponible, Descubrir sigue funcionando: las listas salen de lo más leído en Open Library (temas exactos, obras con edición en español, título y tapa de esa edición) y las recomendaciones, de los temas de los libros mejor puntuados. Esas listas se guardan 6 horas y después se vuelve a intentar con IA.
+
 Usa `ANTHROPIC_API_KEY` si está cargada; si no, el AI Gateway de Vercel con el token OIDC del proyecto (no hace falta configurar nada). Modelo: Claude Haiku 5.5 (`ESTANTE_IA_MODEL` / `ESTANTE_GATEWAY_MODEL` para cambiarlo). El código está en `api/_estante_ia.js`.
 
 ## Pruebas
