@@ -296,16 +296,18 @@ const OL_SUBJECTS = {
 };
 const GENERIC_SUBJECT = /^(fiction|fiction, general|general|accessible book|protected daisy|in library|lending library|large type books|open library staff picks|reading level|translations|spanish language|english language|literature|nonfiction|non-fiction|juvenile|textbooks|ficción|novela|long now manual for civilization)|nyt:|award|bestseller|readers|collection|book club|staff picks|translations? into|language materials/i;
 
+// Si Open Library devuelve la edición en español, se usa su título (y su tapa).
+const spanishEdition = d => ((d.editions && d.editions.docs) || []).find(e => (e.language || []).includes('spa') && e.title);
 const olDoc = d => ({
-  ref: 'ol:' + String(d.key || '').replace('/works/', ''), title: d.title || '', author: (d.author_name || []).slice(0, 2).join(', '),
+  ref: 'ol:' + String(d.key || '').replace('/works/', ''), title: (spanishEdition(d) || d).title || '', author: (d.author_name || []).slice(0, 2).join(', '),
   year: d.first_publish_year ? String(d.first_publish_year) : '', length: d.number_of_pages_median || 0,
-  cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : '', why: '',
+  cover: (() => { const e = spanishEdition(d); const id = (e && e.cover_i) || d.cover_i; return id ? `https://covers.openlibrary.org/b/id/${id}-M.jpg` : ''; })(), why: '',
 });
 
 async function olPopular(subjects, { exclude = new Set(), limit = 12, perAuthor = 2 } = {}) {
   const q = '(' + subjects.map(x => `subject:"${x}"`).join(' OR ') + ') language:spa';
   const j = await getJSON('https://openlibrary.org/search.json?' + new URLSearchParams({
-    q, sort: 'readinglog', limit: '60', lang: 'es', fields: 'key,title,author_name,first_publish_year,number_of_pages_median,cover_i',
+    q, sort: 'readinglog', limit: '60', lang: 'es', fields: 'key,title,author_name,first_publish_year,number_of_pages_median,cover_i,editions,editions.title,editions.language,editions.cover_i',
   }), 9000);
   const out = [], byAuthor = new Map();
   for (const d of j.docs || []) {
@@ -360,7 +362,7 @@ async function categoryList(cat, req) {
   const key = `estante:desc:${cat}:${month}`;
   const cached = await redis('GET', key);
   if (cached) return JSON.parse(cached);
-  const olKey = `estante:desc-ol:${cat}`;
+  const olKey = `estante:desc-ol2:${cat}`;
   const olCached = await redis('GET', olKey);
   if (olCached) return JSON.parse(olCached);
   const fallback = async () => {
