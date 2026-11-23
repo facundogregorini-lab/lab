@@ -256,6 +256,8 @@ async function search(q, tipo) {
 
 const { CATEGORIES, bestSellers, recommend, enabled: iaEnabled } = require('./_estante_ia');
 const IA_DAILY_LIMIT = 6;
+const NOT_ACTIVE = 'Descubrir todavía no está activado: falta habilitar la IA en Vercel.';
+const iaInactive = error => /AI Gateway (401|402|403)|credit card|no está configurada|authentication/i.test(error.message);
 const argDay = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
 
 // Busca cada libro en Open Library para sumar portada, páginas y una referencia estable. El título de la IA manda.
@@ -301,6 +303,7 @@ async function categoryList(cat, req) {
   } catch (error) {
     await redis('DEL', key + ':lock');
     console.error('Estante lista', cat, error.message);
+    if (iaInactive(error)) throw new HttpError(503, NOT_ACTIVE);
     throw new HttpError(502, 'No pudimos armar la lista ahora. Probá de nuevo en un rato.');
   }
 }
@@ -319,6 +322,10 @@ async function makeRecommendations(name, req) {
   let books;
   try { books = await recommend({ read, skip }, req); } catch (error) {
     console.error('Estante recomendaciones', error.message);
+    if (iaInactive(error)) {
+      await redis('DECR', 'estante:ia:' + name + ':' + argDay()).catch(() => {});
+      throw new HttpError(503, NOT_ACTIVE);
+    }
     throw new HttpError(502, 'No pudimos pensar recomendaciones ahora. Probá de nuevo en un rato.');
   }
   const mine = new Set(items.map(i => norm(i.title)));
