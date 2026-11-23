@@ -73,6 +73,8 @@
     download: '<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>',
     upload: '<path d="M12 20V8M7 13l5-5 5 5M5 4h14"/>',
     phone: '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>',
+    sparkle: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+    bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
     left: '<path d="m15 18-6-6 6-6"/>',
     right: '<path d="m9 6 6 6-6 6"/>',
   };
@@ -89,6 +91,7 @@
     lib: { type: 'todo', status: 'terminado', auto: true, q: '', searching: false },
     add: { type: 'libro', q: '', results: [], loading: false, error: '', seq: 0 },
     year: thisYear(),
+    disc: { cat: 'desarrollo', lists: {}, loading: {}, error: {}, recs: store.get('estante:recs', null), recsLoading: false, recsError: '', recsFetched: false },
     installPrompt: null,
     authError: '',
   };
@@ -177,7 +180,7 @@
     const r = route();
     const key = r.name + '/' + r.arg;
     const view = $('#view');
-    const views = { inicio: viewHome, biblioteca: viewLibrary, item: viewItem, agregar: viewAdd, anio: viewYear, perfil: viewProfile };
+    const views = { inicio: viewHome, biblioteca: viewLibrary, item: viewItem, agregar: viewAdd, descubrir: viewDiscover, anio: viewYear, perfil: viewProfile };
     const fn = views[r.name] || viewHome;
     view.innerHTML = fn(r);
     document.body.classList.toggle('no-tabbar', r.name === 'item' || r.name === 'agregar');
@@ -185,10 +188,11 @@
       if (a.dataset.tab === (views[r.name] ? r.name : 'inicio')) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     if (key !== lastRoute) { window.scrollTo(0, 0); lastRoute = key; }
-    const titles = { inicio: 'Estante', biblioteca: 'Biblioteca · Estante', item: (find(r.arg) || {}).title || 'Estante', agregar: 'Agregar · Estante', anio: 'Tu año · Estante', perfil: 'Perfil · Estante' };
+    const titles = { inicio: 'Estante', biblioteca: 'Biblioteca · Estante', item: (find(r.arg) || {}).title || 'Estante', agregar: 'Agregar · Estante', anio: 'Tu año · Estante', perfil: 'Perfil · Estante', descubrir: 'Descubrir · Estante' };
     document.title = titles[r.name] || 'Estante';
     if (r.name === 'agregar') afterAddRender();
     if (r.name === 'item') autosize($('#note'));
+    if (r.name === 'descubrir') afterDiscoverRender();
   }
 
   // ---------- Inicio ----------
@@ -502,6 +506,138 @@
     if (dlg.open) dlg.close();
   }
 
+  // ---------- Descubrir ----------
+  const CATS = [
+    ['desarrollo', 'Desarrollo personal'], ['biografias', 'Biografías'], ['ciencia', 'Ciencia'], ['medicina', 'Medicina y salud'],
+    ['psicologia', 'Psicología'], ['negocios', 'Negocios'], ['historia', 'Historia'], ['filosofia', 'Filosofía'],
+    ['novela', 'Novela'], ['policiales', 'Policiales'], ['fantasia', 'Ciencia ficción y fantasía'], ['clasicos', 'Clásicos'],
+  ];
+  const monthKey = () => { const d = new Date(Date.now() - 3 * 3600e3); return d.toISOString().slice(0, 7); };
+  const asItem = b => ({ type: 'libro', title: b.title, creator: b.author, year: b.year, length: b.length, cover: b.cover, ref: b.ref, id: b.ref || b.title });
+
+  function discActions(b, src, i) {
+    const have = existing({ ref: b.ref, title: b.title, creator: b.author }, 'libro');
+    if (have) return `<a class="in-lib t-libro" href="#/item/${esc(have.id)}">${icon('check', 14, ' style="stroke-width:2.4"')}${statusLabel('libro', have.status)} · Ver</a>`;
+    return `<div class="actions two">
+      <button class="btn" data-action="discAdd" data-src="${src}" data-i="${i}" data-v="pendiente">${icon('bookmark', 15)}Quiero leerlo</button>
+      <button class="btn btn-dark" data-action="discAdd" data-src="${src}" data-i="${i}" data-v="terminado">${icon('check', 15)}Ya lo leí</button>
+    </div>`;
+  }
+
+  function recsBlock() {
+    const d = state.disc;
+    const readCount = live().filter(i => i.type === 'libro' && i.status === 'terminado').length;
+    if (!state.token) return `<div class="ia-card"><span class="sparkle">${icon('sparkle', 26)}</span>
+      <h3>Recomendaciones hechas para vos</h3>
+      <p>Según los libros que leíste y cómo los puntuaste. Necesitás una cuenta para pedirlas.</p>
+      <a class="btn" href="#/perfil">Crear cuenta o entrar</a></div>`;
+    if (d.recsLoading) return `<div class="loading-line"><span class="spinner"></span>Pensando en tus lecturas…</div><div class="skeleton"></div>`;
+    const err = d.recsError ? `<p class="error" role="alert">${esc(d.recsError)}</p>` : '';
+    if (!readCount) return `<div class="ia-card"><span class="sparkle">${icon('sparkle', 26)}</span>
+      <h3>Contanos qué leíste</h3>
+      <p>Marcá como terminados los libros que leíste y puntualos: con eso te recomendamos qué leer después.</p>
+      <a class="btn" href="#/agregar?tipo=libro">Agregar libros leídos</a></div>`;
+    const recs = d.recs && Array.isArray(d.recs.books) ? d.recs.books : null;
+    if (!recs || !recs.length) return `<div class="ia-card"><span class="sparkle">${icon('sparkle', 26)}</span>
+      <h3>¿Qué leo después?</h3>
+      <p>Te recomendamos libros según ${readCount === 1 ? 'el libro que terminaste' : `los ${readCount} libros que terminaste`} y cómo los puntuaste.</p>
+      ${err}<button class="btn" data-action="recs">${icon('sparkle', 18)}Recomendame libros</button></div>`;
+    const dt = d.recs.date ? new Date(d.recs.date) : null;
+    const when = dt ? fmtDate(`${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`) : '';
+    return `${err}<div class="hscroll">${recs.map((b, i) => `<article class="rec-card t-libro">
+        <div class="rec-top">${cover(asItem(b), 'r')}<div class="row-text"><strong>${esc(b.title)}</strong><span>${esc([b.author, b.year].filter(Boolean).join(' · '))}</span></div></div>
+        <p class="rec-why">${esc(b.why)}</p>
+        ${discActions(b, 'recs', i)}
+      </article>`).join('')}</div>
+      <p class="muted small">Basado en ${d.recs.basedOn || readCount} ${(d.recs.basedOn || readCount) === 1 ? 'libro terminado' : 'libros terminados'}${when ? ' · ' + esc(when) : ''}.</p>`;
+  }
+
+  function discList() {
+    const d = state.disc, cat = d.cat, list = d.lists[cat];
+    if (d.error[cat]) return `<p class="empty">${esc(d.error[cat])} <button class="link" data-action="discRetry">Reintentar</button></p>`;
+    if (!list) return `<div class="loading-line"><span class="spinner"></span>Armando la lista…</div><div class="skeleton"></div><div class="skeleton"></div>`;
+    return `<div class="results">${list.books.map((b, i) => `<div class="result t-libro">
+        <div class="rank-wrap">${cover(asItem(b), 'r')}<span class="rank">${i + 1}</span></div>
+        <div class="result-body">
+          <strong>${esc(b.title)}</strong>
+          <span>${esc([b.author, b.year, b.length ? b.length + ' p.' : ''].filter(Boolean).join(' · '))}</span>
+          ${b.why ? `<p class="why">${esc(b.why)}</p>` : ''}
+          ${discActions(b, 'list', i)}
+        </div>
+      </div>`).join('')}</div>`;
+  }
+
+  function viewDiscover() {
+    const d = state.disc;
+    return `<header class="page-head"><h1 class="page-title">Descubrir</h1></header>
+    <section class="section" aria-label="Para vos">
+      <div class="section-head"><h2 class="section-title">Para vos</h2>${state.token && d.recs && d.recs.books && d.recs.books.length && !d.recsLoading ? '<button class="link" data-action="recs">Actualizar</button>' : ''}</div>
+      <div id="recsBox">${recsBlock()}</div>
+    </section>
+    <section class="section" aria-label="Best sellers por categoría">
+      <div class="section-head"><h2 class="section-title">Best sellers</h2><span class="muted small">por categoría</span></div>
+      <div class="chips" role="group" aria-label="Categoría">${CATS.map(([id, label]) => `<button class="chip" data-action="discCat" data-v="${id}" aria-pressed="${d.cat === id}">${label}</button>`).join('')}</div>
+      <div id="discList">${discList()}</div>
+      <p class="muted small">Listas armadas con IA a partir de los libros más vendidos y leídos en español, con datos y portadas de Open Library. Se renuevan cada mes.</p>
+    </section>`;
+  }
+
+  const refreshDiscover = () => {
+    if (route().name !== 'descubrir') return;
+    const a = $('#recsBox'), b = $('#discList');
+    if (a) a.innerHTML = recsBlock();
+    if (b) b.innerHTML = discList();
+  };
+
+  function afterDiscoverRender() {
+    loadCategory(state.disc.cat);
+    if (state.token && !state.disc.recsFetched) {
+      state.disc.recsFetched = true;
+      api('estante?recomendaciones=1').then(r => {
+        if (r.books && (!state.disc.recs || (r.date || 0) > (state.disc.recs.date || 0))) { state.disc.recs = r; store.set('estante:recs', r); refreshDiscover(); }
+      }).catch(() => {});
+    }
+  }
+
+  async function loadCategory(cat) {
+    const d = state.disc;
+    if (d.lists[cat] || d.loading[cat]) return;
+    const cached = store.get('estante:desc:' + cat, null);
+    if (cached && cached.month === monthKey() && Array.isArray(cached.books)) { d.lists[cat] = cached; refreshDiscover(); return; }
+    d.loading[cat] = true; d.error[cat] = '';
+    try {
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const res = await fetch('/api/estante?descubrir=' + cat);
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(j.error || 'No pudimos cargar la lista. Probá de nuevo.');
+        if (!j.pending) { d.lists[cat] = j; store.set('estante:desc:' + cat, j); break; }
+        await new Promise(r => setTimeout(r, 3000));
+      }
+      if (!d.lists[cat]) throw new Error('La lista está tardando. Probá de nuevo en un rato.');
+    } catch (e) {
+      d.error[cat] = e instanceof TypeError || e instanceof SyntaxError ? 'No pudimos cargar la lista. Revisá tu conexión.' : e.message;
+    }
+    d.loading[cat] = false;
+    if (d.cat === cat) refreshDiscover();
+  }
+
+  async function requestRecs() {
+    const d = state.disc;
+    if (!state.token || d.recsLoading) return;
+    d.recsLoading = true; d.recsError = '';
+    refreshDiscover();
+    try {
+      clearTimeout(syncTimer);
+      await sync(); // que el servidor tenga los últimos libros marcados
+      const r = await api('estante', { action: 'recomendar' });
+      d.recs = r; store.set('estante:recs', r);
+    } catch (e) {
+      d.recsError = e instanceof TypeError ? 'No hay conexión. Probá de nuevo.' : e.message;
+    }
+    d.recsLoading = false;
+    if (route().name === 'descubrir') render();
+  }
+
   // ---------- Tu año ----------
   function viewYear() {
     const finished = live().filter(i => i.status === 'terminado' && i.finishedAt);
@@ -591,7 +727,7 @@
           : isIOS() ? `<p class="muted small">En el iPhone, abrila en Safari, tocá <b>Compartir</b> (el cuadrado con la flecha) y después <b>Agregar a inicio</b>.</p>`
           : `<p class="muted small">Desde el menú del navegador, elegí <b>Instalar app</b> o <b>Agregar a la pantalla principal</b>.</p>`}
       </section>`;
-    return `<header class="page-head"><h1 class="page-title">Perfil</h1></header>
+    return `<header class="page-head"><h1 class="page-title">Perfil</h1><a class="icon-btn" href="#/" data-action="back" aria-label="Volver">${icon('close', 20)}</a></header>
       ${account}
       ${install}
       <section class="card section">
@@ -689,6 +825,7 @@
     state.token = state.name = null;
     state.sync = 'idle';
     store.del('estante:token'); store.del('estante:name');
+    state.disc.recs = null; state.disc.recsFetched = false; store.del('estante:recs');
     render();
   }
 
@@ -770,6 +907,17 @@
       state.installPrompt = null; render();
     },
     export: () => exportData(),
+    discCat: el => { state.disc.cat = el.dataset.v; document.querySelectorAll('[data-action="discCat"]').forEach(b => b.setAttribute('aria-pressed', String(b === el))); el.scrollIntoView({ inline: 'nearest', block: 'nearest' }); refreshDiscover(); loadCategory(el.dataset.v); },
+    discRetry: () => { state.disc.error[state.disc.cat] = ''; refreshDiscover(); loadCategory(state.disc.cat); },
+    recs: () => requestRecs(),
+    discAdd: el => {
+      const d = state.disc;
+      const list = el.dataset.src === 'recs' ? (d.recs && d.recs.books) : (d.lists[d.cat] && d.lists[d.cat].books);
+      const b = list && list[Number(el.dataset.i)];
+      if (!b) return;
+      addItem({ type: 'libro', title: b.title, creator: b.author, year: b.year, length: b.length, cover: b.cover, ref: b.ref }, el.dataset.v);
+      refreshDiscover();
+    },
   };
   const currentItem = () => { const r = route(); return r.name === 'item' ? find(r.arg) : null; };
 

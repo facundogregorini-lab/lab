@@ -2,7 +2,12 @@
   "headers": [
     {
       "source": "/consultorio/(.*)",
-      "missing": [{ "type": "host", "value": "odontoaraoz.com.ar" }],
+      "missing": [
+        {
+          "type": "host",
+          "value": "odontoaraoz.com.ar"
+        }
+      ],
       "headers": [
         {
           "key": "X-Robots-Tag",
@@ -13,6 +18,9 @@
   ],
   "functions": {
     "api/ia.js": {
+      "maxDuration": 60
+    },
+    "api/estante.js": {
       "maxDuration": 60
     }
   }
