@@ -287,12 +287,20 @@ async function spendIa(name) {
 // ---------- Sin IA: Open Library ----------
 // Si la IA no está disponible, las listas salen de lo más leído en Open Library (registro de lectura de sus usuarios)
 // entre las obras con edición en español, y las recomendaciones, de los temas de los libros mejor puntuados.
+// Temas exactos de Open Library (subject_key); en no ficción se excluye la ficción.
 const OL_SUBJECTS = {
-  desarrollo: ['self-help', 'personal development', 'success'], biografias: ['biography', 'autobiography'],
-  ciencia: ['popular science', 'science', 'cosmology', 'evolution'], medicina: ['medicine', 'health', 'nutrition'],
-  psicologia: ['psychology'], negocios: ['business', 'economics', 'entrepreneurship'], historia: ['history'],
-  filosofia: ['philosophy'], novela: ['fiction'], policiales: ['detective and mystery stories', 'thrillers', 'suspense'],
-  fantasia: ['science fiction', 'fantasy'], clasicos: ['classic literature', 'classics'],
+  desarrollo: { keys: ['self-help', 'personal_development', 'success', 'self-actualization_(psychology)'], nonfiction: true },
+  biografias: { keys: ['biography', 'autobiography', 'biographies'], nonfiction: true },
+  ciencia: { keys: ['popular_science', 'science', 'cosmology', 'evolution', 'physics', 'astronomy'], nonfiction: true },
+  medicina: { keys: ['medicine', 'health', 'nutrition', 'neurosciences', 'brain'], nonfiction: true },
+  psicologia: { keys: ['psychology', 'social_psychology', 'cognitive_psychology'], nonfiction: true },
+  negocios: { keys: ['business', 'economics', 'entrepreneurship', 'management', 'finance,_personal'], nonfiction: true },
+  historia: { keys: ['world_history', 'history'], nonfiction: true },
+  filosofia: { keys: ['philosophy', 'stoics', 'ethics'], nonfiction: true },
+  novela: { keys: ['fiction', 'literary_fiction'] },
+  policiales: { keys: ['detective_and_mystery_stories', 'thrillers', 'suspense', 'fiction,_thrillers,_general', 'crime'] },
+  fantasia: { keys: ['science_fiction', 'fantasy', 'fantasy_fiction'] },
+  clasicos: { keys: ['classic_literature', 'classics'] },
 };
 const GENERIC_SUBJECT = /^(fiction|fiction, general|general|accessible book|protected daisy|in library|lending library|large type books|open library staff picks|reading level|translations|spanish language|english language|literature|nonfiction|non-fiction|juvenile|textbooks|ficción|novela|long now manual for civilization)|nyt:|award|bestseller|readers|collection|book club|staff picks|translations? into|language materials/i;
 
@@ -304,8 +312,9 @@ const olDoc = d => ({
   cover: (() => { const e = spanishEdition(d); const id = (e && e.cover_i) || d.cover_i; return id ? `https://covers.openlibrary.org/b/id/${id}-M.jpg` : ''; })(), why: '',
 });
 
-async function olPopular(subjects, { exclude = new Set(), limit = 12, perAuthor = 2 } = {}) {
-  const q = '(' + subjects.map(x => `subject:"${x}"`).join(' OR ') + ') language:spa';
+async function olPopular(subjects, { exclude = new Set(), limit = 12, perAuthor = 2, nonfiction = false, field = 'subject' } = {}) {
+  const q = '(' + subjects.map(x => `${field}:"${x}"`).join(' OR ') + ') language:spa'
+    + (nonfiction ? ' -subject_key:fiction -subject_key:juvenile_fiction -subject_key:fantasy -subject_key:science_fiction' : '');
   const j = await getJSON('https://openlibrary.org/search.json?' + new URLSearchParams({
     q, sort: 'readinglog', limit: '60', lang: 'es', fields: 'key,title,author_name,first_publish_year,number_of_pages_median,cover_i,editions,editions.title,editions.language,editions.cover_i',
   }), 9000);
@@ -325,7 +334,7 @@ async function olPopular(subjects, { exclude = new Set(), limit = 12, perAuthor 
 
 async function olCategory(cat) {
   if (process.env.ESTANTE_FAKE === '1') return [{ ref: 'ol:x1', title: 'Libro popular', author: 'Autora Ejemplo', year: '2020', length: 200, cover: '', why: '' }];
-  return olPopular(OL_SUBJECTS[cat]);
+  return olPopular(OL_SUBJECTS[cat].keys, { field: 'subject_key', nonfiction: OL_SUBJECTS[cat].nonfiction });
 }
 
 async function olRecommendations(read, items) {
@@ -362,7 +371,7 @@ async function categoryList(cat, req) {
   const key = `estante:desc:${cat}:${month}`;
   const cached = await redis('GET', key);
   if (cached) return JSON.parse(cached);
-  const olKey = `estante:desc-ol2:${cat}`;
+  const olKey = `estante:desc-ol3:${cat}`;
   const olCached = await redis('GET', olKey);
   if (olCached) return JSON.parse(olCached);
   const fallback = async () => {
