@@ -175,8 +175,11 @@ async function searchWikidataFilms(q, docs) {
     pageImages('en', entities.map(e => link(e, 'enwiki')).filter(Boolean)),
     pageImages('es', entities.map(e => link(e, 'eswiki')).filter(Boolean)),
   ]);
+  const FILM_CLASSES = new Set(['Q11424', 'Q24869', 'Q93204', 'Q202866', 'Q506240', 'Q226730', 'Q24862', 'Q17517379']);
+  const isFilm = e => values(e, 'P31').some(v => FILM_CLASSES.has(v.id)) || values(e, 'P136').some(v => v.id === 'Q93204');
   const isDoc = e => [...values(e, 'P31'), ...values(e, 'P136')].some(v => v.id === 'Q93204');
-  const ordered = docs ? [...entities.filter(isDoc), ...entities.filter(e => !isDoc(e))] : entities;
+  const films = entities.filter(isFilm);
+  const ordered = docs ? [...films.filter(isDoc), ...films.filter(e => !isDoc(e))] : films;
   return ordered.map(e => {
     const years = values(e, 'P577').map(v => String(v.time || '').slice(1, 5)).filter(y => /^\d{4}$/.test(y)).sort();
     const dur = values(e, 'P2047')[0];
