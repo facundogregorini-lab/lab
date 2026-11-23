@@ -307,7 +307,7 @@ const GENERIC_SUBJECT = /^(fiction|fiction, general|general|accessible book|prot
 // Si Open Library devuelve la edición en español, se usa su título (y su tapa).
 const spanishEdition = d => ((d.editions && d.editions.docs) || []).find(e => (e.language || []).includes('spa') && e.title);
 const olDoc = d => ({
-  ref: 'ol:' + String(d.key || '').replace('/works/', ''), title: (spanishEdition(d) || d).title || '', author: (d.author_name || []).slice(0, 2).join(', '),
+  ref: 'ol:' + String(d.key || '').replace('/works/', ''), title: String((spanishEdition(d) || d).title || '').split(' / ')[0].trim(), author: (d.author_name || []).slice(0, 2).join(', '),
   year: d.first_publish_year ? String(d.first_publish_year) : '', length: d.number_of_pages_median || 0,
   cover: (() => { const e = spanishEdition(d); const id = (e && e.cover_i) || d.cover_i; return id ? `https://covers.openlibrary.org/b/id/${id}-M.jpg` : ''; })(), why: '',
 });
