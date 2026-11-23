@@ -256,8 +256,6 @@ async function search(q, tipo) {
 
 const { CATEGORIES, bestSellers, recommend, enabled: iaEnabled } = require('./_estante_ia');
 const IA_DAILY_LIMIT = 6;
-const NOT_ACTIVE = 'Descubrir todavía no está activado: falta habilitar la IA en Vercel.';
-const iaInactive = error => /AI Gateway (401|402|403)|credit card|no está configurada|authentication/i.test(error.message);
 const argDay = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
 
 // Busca cada libro en Open Library para sumar portada, páginas y una referencia estable. El título de la IA manda.
@@ -286,12 +284,93 @@ async function spendIa(name) {
   if (used > IA_DAILY_LIMIT) throw new HttpError(429, 'Ya pediste muchas recomendaciones hoy. Probá mañana.');
 }
 
+// ---------- Sin IA: Open Library ----------
+// Si la IA no está disponible, las listas salen de lo más leído en Open Library (registro de lectura de sus usuarios)
+// entre las obras con edición en español, y las recomendaciones, de los temas de los libros mejor puntuados.
+const OL_SUBJECTS = {
+  desarrollo: ['self-help', 'personal development', 'success'], biografias: ['biography', 'autobiography'],
+  ciencia: ['popular science', 'science', 'cosmology', 'evolution'], medicina: ['medicine', 'health', 'nutrition'],
+  psicologia: ['psychology'], negocios: ['business', 'economics', 'entrepreneurship'], historia: ['history'],
+  filosofia: ['philosophy'], novela: ['fiction'], policiales: ['detective and mystery stories', 'thrillers', 'suspense'],
+  fantasia: ['science fiction', 'fantasy'], clasicos: ['classic literature', 'classics'],
+};
+const GENERIC_SUBJECT = /^(fiction|fiction, general|general|accessible book|protected daisy|in library|lending library|large type books|open library staff picks|reading level|translations|spanish language|english language|literature|nonfiction|non-fiction|juvenile|textbooks|ficción|novela|long now manual for civilization)|nyt:|award|bestseller|readers|collection|book club|staff picks|translations? into|language materials/i;
+
+const olDoc = d => ({
+  ref: 'ol:' + String(d.key || '').replace('/works/', ''), title: d.title || '', author: (d.author_name || []).slice(0, 2).join(', '),
+  year: d.first_publish_year ? String(d.first_publish_year) : '', length: d.number_of_pages_median || 0,
+  cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : '', why: '',
+});
+
+async function olPopular(subjects, { exclude = new Set(), limit = 12, perAuthor = 2 } = {}) {
+  const q = '(' + subjects.map(x => `subject:"${x}"`).join(' OR ') + ') language:spa';
+  const j = await getJSON('https://openlibrary.org/search.json?' + new URLSearchParams({
+    q, sort: 'readinglog', limit: '60', lang: 'es', fields: 'key,title,author_name,first_publish_year,number_of_pages_median,cover_i',
+  }), 9000);
+  const out = [], byAuthor = new Map();
+  for (const d of j.docs || []) {
+    const b = olDoc(d);
+    const a = norm(b.author.split(',')[0]);
+    if (!b.title || !d.cover_i || exclude.has(norm(b.title))) continue;
+    if ((byAuthor.get(a) || 0) >= perAuthor) continue;
+    byAuthor.set(a, (byAuthor.get(a) || 0) + 1);
+    exclude.add(norm(b.title));
+    out.push(b);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+async function olCategory(cat) {
+  if (process.env.ESTANTE_FAKE === '1') return [{ ref: 'ol:x1', title: 'Libro popular', author: 'Autora Ejemplo', year: '2020', length: 200, cover: '', why: '' }];
+  return olPopular(OL_SUBJECTS[cat]);
+}
+
+async function olRecommendations(read, items) {
+  if (process.env.ESTANTE_FAKE === '1') return [{ ref: 'ol:x2', title: 'Recomendado sin IA', author: 'Autor Ejemplo', year: '2019', length: 250, cover: '', why: `Para seguir con lo que te gustó de ${read[0].title}.` }];
+  const top = read.filter(b => !b.rating || b.rating >= 3).slice(0, 6);
+  const found = await Promise.all(top.map(b => getJSON('https://openlibrary.org/search.json?' + new URLSearchParams({
+    q: `${b.title} ${b.creator}`, limit: '1', fields: 'subject',
+  }), 6000).then(j => ({ book: b, subjects: ((j.docs && j.docs[0] && j.docs[0].subject) || []) })).catch(() => ({ book: b, subjects: [] }))));
+  const score = new Map();
+  for (const { book, subjects } of found) {
+    for (const sub of subjects.slice(0, 25)) {
+      const k = sub.trim().toLowerCase();
+      if (k.length > 40 || k.includes(':') || GENERIC_SUBJECT.test(k)) continue;
+      const cur = score.get(k) || { n: 0, from: book.title };
+      cur.n += 1 + (book.rating || 3) / 5;
+      score.set(k, cur);
+    }
+  }
+  const best = [...score.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 4);
+  if (!best.length) return [];
+  const exclude = new Set(items.map(i => norm(i.title)));
+  const lists = [];
+  for (const [subject, info] of best) {
+    const books = await olPopular([subject], { exclude, limit: 3, perAuthor: 1 }).catch(() => []);
+    lists.push(books.map(b => ({ ...b, why: `Para seguir con lo que te gustó de ${info.from}.` })));
+  }
+  const out = [];
+  for (let i = 0; out.length < 8 && lists.some(l => l[i]); i++) for (const l of lists) if (l[i] && out.length < 8) out.push(l[i]);
+  return out;
+}
+
 async function categoryList(cat, req) {
   const month = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 7);
   const key = `estante:desc:${cat}:${month}`;
   const cached = await redis('GET', key);
   if (cached) return JSON.parse(cached);
-  if (!iaEnabled()) throw new HttpError(503, 'Las listas no están disponibles en este sitio.');
+  const olKey = `estante:desc-ol:${cat}`;
+  const olCached = await redis('GET', olKey);
+  if (olCached) return JSON.parse(olCached);
+  const fallback = async () => {
+    const books = await olCategory(cat);
+    if (!books.length) throw new HttpError(502, 'No pudimos armar la lista ahora. Probá de nuevo en un rato.');
+    const data = { category: cat, label: CATEGORIES[cat].label, month, books, source: 'ol' };
+    await redis('SET', olKey, JSON.stringify(data), 'EX', String(6 * 3600)); // reintenta con IA cada 6 horas
+    return data;
+  };
+  if (!iaEnabled()) return fallback();
   // Una sola generación por categoría y por mes, aunque entren varios a la vez.
   if (!await redis('SET', key + ':lock', '1', 'NX', 'EX', '90')) return { pending: true };
   try {
@@ -303,8 +382,10 @@ async function categoryList(cat, req) {
   } catch (error) {
     await redis('DEL', key + ':lock');
     console.error('Estante lista', cat, error.message);
-    if (iaInactive(error)) throw new HttpError(503, NOT_ACTIVE);
-    throw new HttpError(502, 'No pudimos armar la lista ahora. Probá de nuevo en un rato.');
+    try { return await fallback(); } catch (olError) {
+      console.error('Estante lista Open Library', cat, olError.message);
+      throw new HttpError(502, 'No pudimos armar la lista ahora. Probá de nuevo en un rato.');
+    }
   }
 }
 
@@ -316,21 +397,20 @@ async function makeRecommendations(name, req) {
     .sort((a, b) => (b.rating || 0) - (a.rating || 0) || String(b.finishedAt || '').localeCompare(String(a.finishedAt || '')))
     .slice(0, 50).map(i => ({ title: i.title, creator: i.creator, rating: i.rating || 0 }));
   if (!read.length) throw new HttpError(400, 'Marcá como terminado al menos un libro para que te recomendemos.');
-  if (!iaEnabled()) throw new HttpError(503, 'Las recomendaciones no están disponibles en este sitio.');
   await spendIa(name);
   const skip = items.filter(i => i.status !== 'terminado').slice(0, 80).map(i => ({ title: i.title, creator: i.creator }));
-  let books;
-  try { books = await recommend({ read, skip }, req); } catch (error) {
-    console.error('Estante recomendaciones', error.message);
-    if (iaInactive(error)) {
-      await redis('DECR', 'estante:ia:' + name + ':' + argDay()).catch(() => {});
-      throw new HttpError(503, NOT_ACTIVE);
-    }
-    throw new HttpError(502, 'No pudimos pensar recomendaciones ahora. Probá de nuevo en un rato.');
-  }
   const mine = new Set(items.map(i => norm(i.title)));
-  books = (await Promise.all(books.filter(b => !mine.has(norm(b.title))).map(enrich)));
-  const data = { books, basedOn: read.length, date: Date.now() };
+  let books = null, source = 'ia';
+  if (iaEnabled()) {
+    try { books = (await Promise.all((await recommend({ read, skip }, req)).filter(b => !mine.has(norm(b.title))).map(enrich))); }
+    catch (error) { console.error('Estante recomendaciones', error.message); }
+  }
+  if (!books || !books.length) {
+    source = 'ol';
+    try { books = await olRecommendations(read, items); } catch (error) { console.error('Estante recomendaciones Open Library', error.message); books = []; }
+    if (!books.length) throw new HttpError(502, 'No pudimos pensar recomendaciones ahora. Probá de nuevo en un rato.');
+  }
+  const data = { books, basedOn: read.length, date: Date.now(), source };
   await redis('SET', 'estante:recs:' + name, JSON.stringify(data));
   return data;
 }

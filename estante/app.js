@@ -578,15 +578,23 @@
       <div class="section-head"><h2 class="section-title">Best sellers</h2><span class="muted small">por categoría</span></div>
       <div class="chips" role="group" aria-label="Categoría">${CATS.map(([id, label]) => `<button class="chip" data-action="discCat" data-v="${id}" aria-pressed="${d.cat === id}">${label}</button>`).join('')}</div>
       <div id="discList">${discList()}</div>
-      <p class="muted small">Listas armadas con IA a partir de los libros más vendidos y leídos en español, con datos y portadas de Open Library. Se renuevan cada mes.</p>
+      <p class="muted small" id="discNote">${discNote()}</p>
     </section>`;
+  }
+
+  function discNote() {
+    const list = state.disc.lists[state.disc.cat];
+    return list && list.source === 'ol'
+      ? 'Lo más leído en Open Library entre los libros con edición en español.'
+      : 'Listas armadas con IA a partir de los libros más vendidos y leídos en español, con datos y portadas de Open Library. Se renuevan cada mes.';
   }
 
   const refreshDiscover = () => {
     if (route().name !== 'descubrir') return;
-    const a = $('#recsBox'), b = $('#discList');
+    const a = $('#recsBox'), b = $('#discList'), n = $('#discNote');
     if (a) a.innerHTML = recsBlock();
     if (b) b.innerHTML = discList();
+    if (n) n.textContent = discNote();
   };
 
   function afterDiscoverRender() {
@@ -610,7 +618,7 @@
         const res = await fetch('/api/estante?descubrir=' + cat);
         const j = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(j.error || 'No pudimos cargar la lista. Probá de nuevo.');
-        if (!j.pending) { d.lists[cat] = j; store.set('estante:desc:' + cat, j); break; }
+        if (!j.pending) { d.lists[cat] = j; if (j.source !== 'ol') store.set('estante:desc:' + cat, j); break; }
         await new Promise(r => setTimeout(r, 3000));
       }
       if (!d.lists[cat]) throw new Error('La lista está tardando. Probá de nuevo en un rato.');
