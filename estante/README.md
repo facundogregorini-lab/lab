@@ -7,7 +7,7 @@ Registro personal de libros, películas, documentales y podcasts. Se abre en `/e
 - **Inicio**: lo que estás leyendo, viendo o escuchando (con progreso), los terminados del año por tipo y lo próximo de tu lista.
 - **Biblioteca**: grilla de portadas con filtros por tipo y estado (terminados, en curso, pendientes) y buscador por título, autor o etiqueta.
 - **Ficha**: estado, progreso (página en libros, porcentaje en lo demás), puntaje de 1 a 5, fechas de inicio y fin, nota y etiquetas.
-- **Agregar**: buscás y la portada y los datos se completan solos. Libros desde Google Books y Open Library (también por ISBN, y en Android se puede escanear el código de barras); películas, documentales y podcasts (programas y episodios) desde la búsqueda de Apple. Si algo no aparece, se carga a mano.
+- **Agregar**: buscás y la portada y los datos se completan solos. Libros desde Google Books y Open Library (también por ISBN, y en Android se puede escanear el código de barras); películas y documentales desde Wikidata (con el póster de Wikipedia), y podcasts (programas y episodios) desde la búsqueda de Apple. Si algo no aparece, se carga a mano.
 - **Tu año**: total de terminados, reparto por tipo, gráfico por mes, páginas y horas, y lo mejor puntuado.
 - **Perfil**: cuenta, instalación y copia de seguridad (bajar e importar un JSON).
 

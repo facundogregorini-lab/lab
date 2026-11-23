@@ -602,7 +602,7 @@
           <label class="btn">${icon('upload', 18)}Importar<input type="file" id="importFile" accept="application/json,.json" class="sr-only"></label>
         </div>
       </section>
-      <p class="muted small center">Estante · portadas y datos de Google Books, Open Library y Apple.</p>`;
+      <p class="muted small center">Estante · portadas y datos de Google Books, Open Library, Wikidata, Wikipedia y Apple.</p>`;
   }
 
   // ---------- Cuenta y sincronización ----------

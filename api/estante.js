@@ -55,7 +55,7 @@ function cleanItems(items) {
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 
 async function getJSON(url, ms = 7000) {
-  const r = await fetch(url, { signal: AbortSignal.timeout(ms), headers: { 'User-Agent': 'Estante/1.0 (lab)', Accept: 'application/json' } });
+  const r = await fetch(url, { signal: AbortSignal.timeout(ms), headers: { 'User-Agent': 'Estante/1.0 (https://lab-orpin-five.vercel.app/estante/)', Accept: 'application/json' } });
   if (!r.ok) throw new Error(new URL(url).host + ' ' + r.status);
   return r.json();
 }
@@ -83,8 +83,9 @@ async function searchBooks(q) {
   const [google, openLibrary] = await Promise.allSettled([
     getJSON('https://www.googleapis.com/books/v1/volumes?maxResults=15&printType=books&q=' + encodeURIComponent(isIsbn ? 'isbn:' + isbn : q) + key),
     getJSON('https://openlibrary.org/search.json?limit=12&fields=key,title,author_name,first_publish_year,number_of_pages_median,cover_i&'
-      + (isIsbn ? 'isbn=' + isbn : 'q=' + encodeURIComponent(q))),
+      + (isIsbn ? 'isbn=' + isbn : 'q=' + encodeURIComponent(q) + '&lang=es')),
   ]);
+  if (google.status === 'rejected') console.error('Estante Google Books:', google.reason?.message);
   if (google.status === 'rejected' && openLibrary.status === 'rejected') {
     console.error('Estante libros:', google.reason?.message, openLibrary.reason?.message);
     throw new HttpError(502, 'No pudimos buscar libros ahora. Probá de nuevo o cargalo a mano.');
@@ -125,7 +126,62 @@ async function itunes(params) {
 const bigArt = url => String(url || '').replace(/\/\d+x\d+bb\./, '/600x600bb.');
 const minutes = ms => (ms ? Math.round(ms / 60000) : 0);
 
-async function searchMovies(q, docsFirst) {
+// Películas y documentales: Wikidata (título en español, director, año, duración) + póster de Wikipedia.
+const WIKIDATA = 'https://www.wikidata.org/w/api.php?format=json&';
+const FILM_FILTER = 'haswbstatement:P31=Q11424|P31=Q24869|P31=Q93204|P31=Q202866|P31=Q506240|P31=Q226730';
+const DOC_FILTER = 'haswbstatement:P31=Q93204|P136=Q93204';
+
+async function pageImages(lang, titles) {
+  if (!titles.length) return {};
+  try {
+    const j = await getJSON(`https://${lang}.wikipedia.org/w/api.php?` + new URLSearchParams({
+      action: 'query', format: 'json', prop: 'pageimages', piprop: 'thumbnail', pithumbsize: '500', pilicense: 'any', redirects: '1', titles: titles.join('|'),
+    }));
+    const alias = {};
+    for (const n of (j.query && j.query.normalized) || []) alias[n.to] = n.from;
+    for (const r of (j.query && j.query.redirects) || []) alias[r.to] = alias[r.from] || r.from;
+    const map = {};
+    for (const page of Object.values((j.query && j.query.pages) || {})) {
+      const src = page.thumbnail && page.thumbnail.source;
+      if (!src) continue;
+      map[page.title] = src;
+      if (alias[page.title]) map[alias[page.title]] = src;
+    }
+    return map;
+  } catch { return {}; }
+}
+
+async function searchWikidataFilms(q, docs) {
+  const found = await getJSON(WIKIDATA + new URLSearchParams({ action: 'query', list: 'search', srsearch: q + ' ' + (docs ? DOC_FILTER : FILM_FILTER), srlimit: '12', srprop: '' }));
+  const ids = ((found.query && found.query.search) || []).map(r => r.title).filter(t => /^Q\d+$/.test(t));
+  if (!ids.length) return [];
+  const data = await getJSON(WIKIDATA + new URLSearchParams({ action: 'wbgetentities', ids: ids.join('|'), props: 'labels|claims|sitelinks', languages: 'es|en', sitefilter: 'eswiki|enwiki' }));
+  const entities = ids.map(id => data.entities && data.entities[id]).filter(e => e && e.labels);
+  const values = (e, p) => ((e.claims && e.claims[p]) || []).map(c => c.mainsnak && c.mainsnak.datavalue && c.mainsnak.datavalue.value).filter(Boolean);
+  const label = e => (e && e.labels && ((e.labels.es && e.labels.es.value) || (e.labels.en && e.labels.en.value))) || '';
+  const directorIds = [...new Set(entities.flatMap(e => values(e, 'P57').slice(0, 2).map(v => v.id)))].slice(0, 50);
+  const link = (e, wiki) => e.sitelinks && e.sitelinks[wiki] && e.sitelinks[wiki].title;
+  const [directors, enImages, esImages] = await Promise.all([
+    directorIds.length ? getJSON(WIKIDATA + new URLSearchParams({ action: 'wbgetentities', ids: directorIds.join('|'), props: 'labels', languages: 'es|en' })).catch(() => ({})) : {},
+    pageImages('en', entities.map(e => link(e, 'enwiki')).filter(Boolean)),
+    pageImages('es', entities.map(e => link(e, 'eswiki')).filter(Boolean)),
+  ]);
+  return entities.map(e => {
+    const years = values(e, 'P577').map(v => String(v.time || '').slice(1, 5)).filter(y => /^\d{4}$/.test(y)).sort();
+    const dur = values(e, 'P2047')[0];
+    let length = dur ? Number(dur.amount) : 0;
+    if (dur && /Q25235$/.test(dur.unit)) length *= 60; // horas
+    if (dur && /Q11574$/.test(dur.unit)) length /= 60; // segundos
+    const dirs = values(e, 'P57').slice(0, 2).map(v => label(directors.entities && directors.entities[v.id])).filter(Boolean);
+    return {
+      ref: 'wd:' + e.id, title: label(e), creator: dirs.join(', '), year: years[0] || '',
+      length: Number.isFinite(length) ? Math.round(length) : 0,
+      cover: enImages[link(e, 'enwiki')] || esImages[link(e, 'eswiki')] || '',
+    };
+  }).filter(r => r.title);
+}
+
+async function searchItunesMovies(q, docsFirst) {
   const results = await itunes({ term: q, media: 'movie', entity: 'movie', limit: '20' });
   const list = results.map(m => ({
     ref: 'it:' + m.trackId, title: m.trackName || '', creator: m.artistName || '',
@@ -133,7 +189,14 @@ async function searchMovies(q, docsFirst) {
     cover: bigArt(m.artworkUrl100), genre: m.primaryGenreName || '',
   }));
   if (docsFirst) list.sort((a, b) => (b.genre === 'Documentary') - (a.genre === 'Documentary'));
-  return dedupe(list, 12).map(({ genre, ...r }) => r);
+  return list.map(({ genre, ...r }) => r);
+}
+
+async function searchMovies(q, docs) {
+  const [wiki, apple] = await Promise.allSettled([searchWikidataFilms(q, docs), searchItunesMovies(q, docs)]);
+  if (wiki.status === 'rejected') console.error('Estante Wikidata:', wiki.reason?.message);
+  if (wiki.status === 'rejected' && apple.status === 'rejected') throw new HttpError(502, 'No pudimos buscar ahora. Probá de nuevo o cargalo a mano.');
+  return dedupe([...(wiki.value || []), ...(apple.value || [])], 12);
 }
 
 async function searchPodcasts(q) {
