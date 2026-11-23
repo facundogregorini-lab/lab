@@ -157,7 +157,9 @@ async function searchWikidataFilms(q, docs) {
     byLabel('es'), byLabel('en'),
     getJSON(WIKIDATA + new URLSearchParams({ action: 'query', list: 'search', srsearch: q + ' ' + FILM_FILTER + '|P136=Q93204', srlimit: '15', srprop: '' })),
   ]);
+  for (const [name, r] of [['es', es], ['en', en], ['texto', text]]) if (r.status === 'rejected') console.error('Estante Wikidata ' + name + ':', r.reason?.message);
   if ([es, en, text].every(r => r.status === 'rejected')) throw es.reason;
+  console.log('Estante Wikidata', q, JSON.stringify([es, en].map(r => ((r.value && r.value.search) || []).map(x => x.id + ':' + (x.description || '')))));
   const FILMY = /pel[ií]cula|film|documental|documentary|movie|largometraje|cortometraje|miniserie|docuserie/i;
   const labelIds = [es, en].flatMap(r => (r.value && r.value.search) || []).filter(r => FILMY.test(r.description || '')).map(r => r.id);
   const textIds = ((text.value && text.value.query && text.value.query.search) || []).map(r => r.title);
