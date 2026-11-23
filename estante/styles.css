@@ -197,6 +197,26 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 .hint { color: var(--muted); font-size: 14px; padding: 4px 2px; }
 
+/* Descubrir */
+.rec-card { flex: 0 0 min(290px, 84%); scroll-snap-align: start; background: var(--card); border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.rec-top { display: flex; gap: 12px; }
+.rec-top .row-text strong { white-space: normal; font-size: 15px; font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.rec-why { font-size: 13px; line-height: 1.45; color: var(--ink); flex: 1; }
+.rec-card .actions, .result .actions.two { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0; padding-top: 0; }
+.result .actions.two { margin-top: auto; padding-top: 8px; }
+.rec-card .in-lib { margin-top: 0; }
+.rank-wrap { position: relative; flex: none; }
+.rank { position: absolute; top: -6px; left: -6px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: var(--ink); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--bg); }
+.result .why { font-size: 13px; color: var(--ink); line-height: 1.4; }
+.ia-card { background: var(--ink); color: #fff; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.ia-card h3 { font-family: var(--display); font-size: 20px; font-weight: 800; line-height: 1.15; }
+.ia-card p { color: #C9CDD4; font-size: 14px; }
+.ia-card .btn { border-color: #fff; background: #fff; color: var(--ink); }
+.sparkle { color: #F2A93B; }
+.loading-line { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--ink); animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* Tu año */
 .year-nav { display: flex; align-items: center; gap: 6px; }
 .year-card { background: var(--ink); color: #fff; border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }

@@ -106,6 +106,16 @@ const URL = 'http://127.0.0.1:4181/estante/';
     check('Year shows the best rated', await page.locator('.best .tile').count() === 1);
     await shot('anio');
 
+    // Descubrir sin cuenta: listas sí, recomendaciones piden cuenta
+    await page.click('.tabbar a[data-tab="descubrir"]');
+    await page.waitForSelector('#discList .result');
+    check('Best sellers list loads for a category', await page.locator('#discList .result').count() === 3 && await page.locator('#discList .rank').first().textContent() === '1');
+    check('Recommendations ask for an account', (await page.textContent('#recsBox')).includes('cuenta'));
+    await page.click('[data-action="discCat"][data-v="ciencia"]');
+    await page.waitForSelector('#discList .result');
+    check('Category chips switch the list', await page.getAttribute('[data-action="discCat"][data-v="ciencia"]', 'aria-pressed') === 'true');
+    await shot('descubrir');
+
     // Quitar y deshacer
     const id = (await debug()).items.find(i => i.title === 'El marciano').id;
     await page.goto(URL + '#/item/' + id);
@@ -143,6 +153,25 @@ const URL = 'http://127.0.0.1:4181/estante/';
     await page.waitForFunction(() => estanteDebug().items.find(i => i.title === 'Perfect Days').rating === 5, null, { timeout: 5000 });
     check('Changes from another device arrive', true);
     await other.close();
+
+    // Descubrir con cuenta: agregar desde la lista y pedir recomendaciones
+    await page.goto(URL + '#/descubrir');
+    await page.waitForSelector('#discList .result');
+    await page.click('#discList .result:nth-of-type(1) [data-action="discAdd"][data-v="pendiente"]');
+    check('Adding from a best sellers list', (await debug()).items.some(i => i.title === 'Hábitos atómicos' && i.status === 'pendiente'));
+    check('Added book shows as in the shelf', await page.locator('#discList .result:nth-of-type(1) .in-lib').count() === 1);
+    check('Recommendations ask for read books first', (await page.textContent('#recsBox')).includes('Contanos qué leíste'));
+    const rid = (await debug()).items.find(i => i.title === 'Rayuela').id;
+    await page.goto(URL + '#/item/' + rid);
+    await page.click('[data-action="status"][data-v="terminado"]');
+    await page.click('.stars button:nth-child(5)');
+    await page.goto(URL + '#/descubrir');
+    await page.click('#recsBox [data-action="recs"]');
+    await page.waitForSelector('.rec-card');
+    check('Recommendations skip books already in the shelf', await page.locator('.rec-card').count() === 1 && (await page.textContent('.rec-card')).includes('Sapiens'));
+    await shot('descubrir-recs');
+    await page.click('.rec-card [data-action="discAdd"][data-v="terminado"]');
+    check('Adding a recommendation as read', (await debug()).items.some(i => i.title === 'Sapiens' && i.status === 'terminado'));
 
     check('No page-level horizontal overflow', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     check('No uncaught errors', errors.length === 0);

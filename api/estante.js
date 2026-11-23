@@ -1,6 +1,8 @@
 // Estante: registro personal de libros, películas, documentales y podcasts (/estante/).
 // GET ?q=texto&tipo=libro|peli|doc|pod → { results }: busca en Google Books + Open Library (libros) o en iTunes
 //   (películas, documentales y podcasts). No requiere cuenta.
+// GET ?descubrir=categoria → { books }: lista de best sellers de la categoría (IA + Open Library, una vez por mes).
+// GET ?recomendaciones=1 → { books }: las últimas recomendaciones de la cuenta · POST { action: 'recomendar' } las genera.
 // GET → { items, updated }: la lista de la cuenta (mismas cuentas que /api/auth).
 // POST { items } → reemplaza la lista de la cuenta. El cliente fusiona antes de enviar (gana el updatedAt más nuevo).
 const { redis, HttpError, requireUser, body, handler } = require('./_lib');
@@ -250,6 +252,82 @@ async function search(q, tipo) {
   return searchMovies(q, tipo === 'doc');
 }
 
+// ---------- Descubrir: listas por categoría y recomendaciones con IA ----------
+
+const { CATEGORIES, bestSellers, recommend, enabled: iaEnabled } = require('./_estante_ia');
+const IA_DAILY_LIMIT = 6;
+const argDay = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+
+// Busca cada libro en Open Library para sumar portada, páginas y una referencia estable. El título de la IA manda.
+async function enrich(book) {
+  const base = { ...book, ref: 'ia:' + norm(book.title + ' ' + book.author).replace(/ /g, '-').slice(0, 70), cover: '', length: 0 };
+  if (process.env.ESTANTE_FAKE === '1') return base;
+  try {
+    const j = await getJSON('https://openlibrary.org/search.json?' + new URLSearchParams({
+      q: `${book.title} ${book.author}`, limit: '5', lang: 'es', fields: 'key,title,author_name,first_publish_year,number_of_pages_median,cover_i',
+    }), 6000);
+    const last = norm(book.author).split(' ').pop();
+    const doc = (j.docs || []).find(d => !last || (d.author_name || []).some(n => norm(n).includes(last))) || null;
+    if (!doc) return base;
+    return {
+      ...base, ref: 'ol:' + String(doc.key || '').replace('/works/', ''),
+      cover: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : '',
+      length: doc.number_of_pages_median || 0, year: book.year || (doc.first_publish_year ? String(doc.first_publish_year) : ''),
+    };
+  } catch { return base; }
+}
+
+async function spendIa(name) {
+  const key = 'estante:ia:' + name + ':' + argDay();
+  const used = await redis('INCR', key);
+  if (used === 1) await redis('EXPIRE', key, 2 * 86400);
+  if (used > IA_DAILY_LIMIT) throw new HttpError(429, 'Ya pediste muchas recomendaciones hoy. Probá mañana.');
+}
+
+async function categoryList(cat, req) {
+  const month = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 7);
+  const key = `estante:desc:${cat}:${month}`;
+  const cached = await redis('GET', key);
+  if (cached) return JSON.parse(cached);
+  if (!iaEnabled()) throw new HttpError(503, 'Las listas no están disponibles en este sitio.');
+  // Una sola generación por categoría y por mes, aunque entren varios a la vez.
+  if (!await redis('SET', key + ':lock', '1', 'NX', 'EX', '90')) return { pending: true };
+  try {
+    const books = await Promise.all((await bestSellers(cat, req)).map(enrich));
+    if (!books.length) throw new Error('lista vacía');
+    const data = { category: cat, label: CATEGORIES[cat].label, month, books };
+    await redis('SET', key, JSON.stringify(data), 'EX', String(40 * 86400));
+    return data;
+  } catch (error) {
+    await redis('DEL', key + ':lock');
+    console.error('Estante lista', cat, error.message);
+    throw new HttpError(502, 'No pudimos armar la lista ahora. Probá de nuevo en un rato.');
+  }
+}
+
+async function makeRecommendations(name, req) {
+  const stored = await redis('GET', itemsKey(name));
+  let items = [];
+  try { items = (JSON.parse(stored || '{}').items || []).filter(i => i && !i.deleted && i.type === 'libro'); } catch {}
+  const read = items.filter(i => i.status === 'terminado')
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0) || String(b.finishedAt || '').localeCompare(String(a.finishedAt || '')))
+    .slice(0, 50).map(i => ({ title: i.title, creator: i.creator, rating: i.rating || 0 }));
+  if (!read.length) throw new HttpError(400, 'Marcá como terminado al menos un libro para que te recomendemos.');
+  if (!iaEnabled()) throw new HttpError(503, 'Las recomendaciones no están disponibles en este sitio.');
+  await spendIa(name);
+  const skip = items.filter(i => i.status !== 'terminado').slice(0, 80).map(i => ({ title: i.title, creator: i.creator }));
+  let books;
+  try { books = await recommend({ read, skip }, req); } catch (error) {
+    console.error('Estante recomendaciones', error.message);
+    throw new HttpError(502, 'No pudimos pensar recomendaciones ahora. Probá de nuevo en un rato.');
+  }
+  const mine = new Set(items.map(i => norm(i.title)));
+  books = (await Promise.all(books.filter(b => !mine.has(norm(b.title))).map(enrich)));
+  const data = { books, basedOn: read.length, date: Date.now() };
+  await redis('SET', 'estante:recs:' + name, JSON.stringify(data));
+  return data;
+}
+
 module.exports = handler(async (req, res) => {
   const params = new URL(req.url, 'http://localhost').searchParams;
 
@@ -262,9 +340,23 @@ module.exports = handler(async (req, res) => {
     return { results };
   }
 
+  if (req.method === 'GET' && params.has('descubrir')) {
+    const cat = params.get('descubrir');
+    if (!CATEGORIES[cat]) throw new HttpError(400, 'Categoría desconocida.');
+    const data = await categoryList(cat, req);
+    if (!data.pending) res.setHeader('Cache-Control', 'public, max-age=600, s-maxage=3600');
+    return data;
+  }
+
   const name = await requireUser(req);
+  if (req.method === 'GET' && params.has('recomendaciones')) {
+    const stored = await redis('GET', 'estante:recs:' + name);
+    return stored ? JSON.parse(stored) : { books: null };
+  }
   if (req.method === 'POST') {
-    const items = cleanItems(body(req).items);
+    const data = body(req);
+    if (data.action === 'recomendar') return makeRecommendations(name, req);
+    const items = cleanItems(data.items);
     const updated = Date.now();
     await redis('SET', itemsKey(name), JSON.stringify({ items, updated }));
     return { ok: true, updated, count: items.length };
