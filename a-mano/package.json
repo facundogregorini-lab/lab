@@ -17,10 +17,10 @@
   "dependencies": {
     "@vercel/blob": "^2.9.0",
     "better-sqlite3": "^12.4.1",
-    "next": "^15.5.4",
+    "next": "^15.5.29",
     "qrcode": "^1.5.4",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react": "^19.1.10",
+    "react-dom": "^19.1.10"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
