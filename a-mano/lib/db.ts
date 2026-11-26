@@ -136,10 +136,10 @@ export function dbPath() {
   return process.env.AMANO_DB_PATH || path.join(process.cwd(), 'data', 'amano.db');
 }
 
-export function openDb(file = dbPath()): DB {
-  if (file !== ':memory:') fs.mkdirSync(path.dirname(file), { recursive: true });
+export function openDb(file: string | Buffer = dbPath()): DB {
+  if (typeof file === 'string' && file !== ':memory:') fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new Database(file);
-  db.pragma('journal_mode = WAL');
+  if (typeof file === 'string') db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.pragma('busy_timeout = 5000');
   db.exec(SCHEMA);
@@ -148,7 +148,7 @@ export function openDb(file = dbPath()): DB {
   return db;
 }
 
-export function getDb(): DB {
+export function getFileDb(): DB {
   const file = dbPath();
   if (!g.__amanoDb || g.__amanoDb.path !== file) g.__amanoDb = { path: file, db: openDb(file) };
   return g.__amanoDb.db;

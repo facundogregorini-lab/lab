@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import AutoRefresh from '@/components/AutoRefresh';
 import DemoBar from '@/components/DemoBar';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { referente } from '@/lib/domain';
 import { getActor } from '@/lib/session';
 
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export default async function ReferenteLayout({ children }: { children: React.ReactNode }) {
   const actor = await getActor();
   if (actor?.role !== 'referente') redirect('/demo?falta=referente');
-  const r = referente(getDb(), actor.referenteId)!;
+  const r = referente((await getDb()), actor.referenteId)!;
   return (
     <>
       <DemoBar who={`${r.name} (referente)`} />

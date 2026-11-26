@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { BackIcon } from '@/components/Icons';
 import QR, { LocalhostHint } from '@/components/QR';
 import ShareLink from '@/components/ShareLink';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { cardOf, movements } from '@/lib/domain';
 import { dateLabel, money } from '@/lib/format';
 import { requirePersonaId } from '@/lib/me';
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function RecibirAportes() {
   const personId = await requirePersonaId();
-  const db = getDb();
+  const db = (await getDb());
   const card = cardOf(db, personId)!;
   const path = `/a/${card.public_token}`;
   const aportes = movements(db, personId).filter((m) => m.kind === 'aporte');

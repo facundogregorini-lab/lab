@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CheckIcon } from '@/components/Icons';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { balance, receipt } from '@/lib/domain';
 import { dateLabel, money } from '@/lib/format';
 import { requirePersonaId } from '@/lib/me';
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export default async function Comprobante({ params }: { params: Promise<{ id: string }> }) {
   const personId = await requirePersonaId();
   const { id } = await params;
-  const db = getDb();
+  const db = (await getDb());
   const r = receipt(db, { role: 'persona', personId }, id);
   if (!r || r.kind !== 'compra') notFound();
   return (

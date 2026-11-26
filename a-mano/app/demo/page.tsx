@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import DemoControls from '@/components/DemoControls';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { balance, getClock } from '@/lib/domain';
 import { DANI } from '@/lib/seed';
 import { dateLabel, money } from '@/lib/format';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Demo({ searchParams }: { searchParams: Promise<{ falta?: string }> }) {
   const { falta } = await searchParams;
-  const db = getDb();
+  const db = (await getDb());
   const { week, today } = getClock(db);
   return (
     <main id="contenido" className="page">

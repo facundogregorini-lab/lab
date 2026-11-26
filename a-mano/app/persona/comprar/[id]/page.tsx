@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BackIcon } from '@/components/Icons';
 import PurchaseFlow from '@/components/PurchaseFlow';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { balance, getMerchant } from '@/lib/domain';
 import { distance } from '@/lib/format';
 import { requirePersonaId } from '@/lib/me';
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export default async function Comercio({ params }: { params: Promise<{ id: string }> }) {
   const personId = await requirePersonaId();
   const { id } = await params;
-  const db = getDb();
+  const db = (await getDb());
   const m = getMerchant(db, id);
   if (!m) notFound();
   return (

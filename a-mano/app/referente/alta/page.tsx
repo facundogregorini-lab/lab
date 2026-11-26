@@ -1,5 +1,5 @@
 import AltaForm from '@/components/AltaForm';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { organizations, referente } from '@/lib/domain';
 import { requireReferenteId } from '@/lib/me';
 
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Alta() {
   const refId = await requireReferenteId();
-  const db = getDb();
+  const db = (await getDb());
   return (
     <>
       <div>

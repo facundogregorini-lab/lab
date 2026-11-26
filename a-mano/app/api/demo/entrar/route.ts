@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const como = url.searchParams.get('como');
-  const actor = parseRole(como);
+  const actor = await parseRole(como);
   const dest = actor?.role === 'persona' ? '/persona' : actor?.role === 'referente' ? '/referente' : '/demo';
   const res = new NextResponse(null, { status: 303, headers: { Location: url.searchParams.get('ir') || dest } });
   if (actor && como) res.cookies.set(ROLE_COOKIE, como, { path: '/', sameSite: 'lax', httpOnly: true, maxAge: 60 * 60 * 24 * 7 });

@@ -36,6 +36,10 @@ También hay un botón "Restablecer la demo" en `/demo`.
 
 Accesos directos: `/api/demo/entrar?como=persona:p_dani` y `/api/demo/entrar?como=referente:r_marta`.
 
+## Versión publicada (Vercel)
+
+Proyecto Vercel `a-mano` (raíz `a-mano/`). Ahí la base SQLite se guarda como un único archivo privado en Vercel Blob (`BLOB_READ_WRITE_TOKEN`, ya conectado). Cada escritura lee la última versión, aplica la operación en una transacción y la guarda solo si nadie la cambió en el medio (ETag + `ifMatch`); si chocan dos, reintenta. Así funciona el flujo entre dos teléfonos aunque Vercel use varias instancias. Sin ese token, la app usa el archivo local `data/amano.db`. Para restablecer la demo publicada, usá el botón de `/demo`.
+
 ## Escanear el QR desde otro teléfono
 
 El QR usa el origen con el que abriste la app. Si abrís `localhost`, otro teléfono no lo puede abrir (la pantalla lo avisa y sugiere la IP).
@@ -72,7 +76,7 @@ npm run test:mobile       # recorrido completo en Chromium a 390 px con tres "te
 
 ## Decisiones tomadas (reversibles)
 
-- Vive en la carpeta `a-mano/` del repo `lab` y está excluida del deploy de Vercel (`.vercelignore`): es solo local.
+- Vive en la carpeta `a-mano/` del repo `lab`. El proyecto Vercel `lab` la ignora (`.vercelignore`); se publica como proyecto aparte, `a-mano`.
 - Rol de demo por cookie, elegido en `/demo`. No es autenticación real.
 - "Ya fui" se acepta en cualquier momento (en un piloto real, a partir de la fecha del turno).
 - Un paso en curso por vez. Cambiar de meta cancela el actual sin tocar el saldo.

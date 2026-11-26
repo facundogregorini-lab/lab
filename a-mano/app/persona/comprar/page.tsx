@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BackIcon } from '@/components/Icons';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { barrios, listMerchants } from '@/lib/domain';
 import { distance } from '@/lib/format';
 import { requirePersonaId } from '@/lib/me';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export default async function DondeComprar({ searchParams }: { searchParams: Promise<{ barrio?: string }> }) {
   await requirePersonaId();
   const { barrio } = await searchParams;
-  const db = getDb();
+  const db = (await getDb());
   const all = barrios(db);
   const selected = barrio && all.includes(barrio) ? barrio : null;
   const list = listMerchants(db, selected);

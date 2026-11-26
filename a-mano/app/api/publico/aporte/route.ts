@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { mutate } from '@/lib/store';
 import { contribute } from '@/lib/domain';
 import { fail, readJson } from '@/lib/http';
 
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const b = await readJson(req);
-    const r = contribute(getDb(), { token: b.token, amount: b.amount, idempotencyKey: b.idempotencyKey });
+    const r = await mutate((db) => contribute(db, { token: b.token, amount: b.amount, idempotencyKey: b.idempotencyKey }));
     return NextResponse.json({ ok: true, credited: r.credited });
   } catch (e) {
     return fail(e);

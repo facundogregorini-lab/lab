@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import DonateForm from '@/components/DonateForm';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { publicProfile } from '@/lib/domain';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Aportar · A mano', robots: { index:
 // Vista pública para quien aporta. Solo muestra el nombre elegido y cómo se usa el aporte.
 export default async function Aportar({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const profile = publicProfile(getDb(), token);
+  const profile = publicProfile((await getDb()), token);
   return (
     <div className="app">
       <main id="contenido" className="screen" style={{ paddingBottom: 40 }}>

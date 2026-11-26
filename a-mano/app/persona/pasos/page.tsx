@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import StepChooser from '@/components/StepChooser';
 import StepDetail from '@/components/StepDetail';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { activeStep, stepsOf, templates, walletSummary } from '@/lib/domain';
 import { money, STATUS } from '@/lib/format';
 import { requirePersonaId } from '@/lib/me';
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export default async function MisPasos({ searchParams }: { searchParams: Promise<{ elegir?: string }> }) {
   const personId = await requirePersonaId();
   const { elegir } = await searchParams;
-  const db = getDb();
+  const db = (await getDb());
   const w = walletSummary(db, personId);
   const steps = stepsOf(db, personId);
   const active = activeStep(db, personId);

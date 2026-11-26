@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { mutate, type getDb } from '@/lib/store';
 import * as d from '@/lib/domain';
 import { fail, readJson } from '@/lib/http';
 import { getActor } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
-type Handler = (db: ReturnType<typeof getDb>, actor: d.Actor, body: Record<string, unknown>) => unknown;
+type Handler = (db: Awaited<ReturnType<typeof getDb>>, actor: d.Actor, body: Record<string, unknown>) => unknown;
 
 const ACTIONS: Record<string, Handler> = {
   comprar: (db, a, b) => d.purchase(db, a, { productId: b.productId, idempotencyKey: b.idempotencyKey }),
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     if (!handler) return NextResponse.json({ error: 'accion_desconocida', message: 'Acción desconocida.' }, { status: 400 });
     const actor = await getActor();
     if (!actor) return NextResponse.json({ error: 'sin_rol', message: 'Elegí un rol en “Probar la demo”.' }, { status: 401 });
-    return NextResponse.json({ ok: true, result: handler(getDb(), actor, body) });
+    return NextResponse.json({ ok: true, result: await mutate((db) => handler(db, actor, body)) });
   } catch (e) {
     return fail(e);
   }

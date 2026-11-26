@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { wellbeing } from '@/lib/domain';
 import { dateLabel } from '@/lib/format';
 import { requireReferenteId } from '@/lib/me';
@@ -9,7 +9,7 @@ const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}\u00a0%`
 
 export default async function Seguimiento() {
   await requireReferenteId();
-  const w = wellbeing(getDb());
+  const w = wellbeing((await getDb()));
   return (
     <>
       <div>

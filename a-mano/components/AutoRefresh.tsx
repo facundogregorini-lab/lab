@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 /** Mantiene la pantalla al día con el servidor: si alguien aporta desde otro teléfono, el saldo cambia solo. */
-export default function AutoRefresh({ every = 3000 }: { every?: number }) {
+export default function AutoRefresh({ every = 4000 }: { every?: number }) {
   const router = useRouter();
   const last = useRef<string | null>(null);
   useEffect(() => {

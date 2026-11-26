@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import QR, { LocalhostHint } from '@/components/QR';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { cardOf, walletSummary } from '@/lib/domain';
 import { requirePersonaId } from '@/lib/me';
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function MiTarjeta() {
   const personId = await requirePersonaId();
-  const db = getDb();
+  const db = (await getDb());
   const card = cardOf(db, personId)!;
   const w = walletSummary(db, personId);
   return (

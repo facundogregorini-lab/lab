@@ -1,7 +1,7 @@
 import ActionButton from '@/components/ActionButton';
 import AgreeForm from '@/components/AgreeForm';
 import NoteAction from '@/components/NoteAction';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { getClock, referenteDashboard } from '@/lib/domain';
 import { dateLabel, money, STATUS } from '@/lib/format';
 import { requireReferenteId } from '@/lib/me';
@@ -14,7 +14,7 @@ function Badge({ status }: { status: string }) {
 
 export default async function Panel() {
   const refId = await requireReferenteId();
-  const db = getDb();
+  const db = (await getDb());
   const d = referenteDashboard(db, refId);
   const { today, week } = getClock(db);
   const openHelp = d.help.filter((h) => h.status === 'abierta');

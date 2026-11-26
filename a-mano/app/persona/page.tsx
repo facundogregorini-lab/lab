@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ArrowIcon, PeopleIcon, PinIcon, StepIcon } from '@/components/Icons';
-import { getDb } from '@/lib/db';
+import { getDb } from '@/lib/store';
 import { activeStep, movements, stepsOf, walletSummary } from '@/lib/domain';
 import { dateLabel, money, shortDate, signed, STATUS } from '@/lib/format';
 import { requirePersonaId } from '@/lib/me';
@@ -14,7 +14,7 @@ function greeting() {
 
 export default async function Inicio() {
   const personId = await requirePersonaId();
-  const db = getDb();
+  const db = (await getDb());
   const w = walletSummary(db, personId);
   const moves = movements(db, personId);
   const step = activeStep(db, personId) ?? stepsOf(db, personId).find((s) => s.status === 'acreditado') ?? null;
