@@ -23,5 +23,12 @@
     "api/estante.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/a-mano/:path*",
+      "destination": "/",
+      "permanent": false
+    }
+  ]
 }

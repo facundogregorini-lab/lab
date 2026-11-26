@@ -76,7 +76,7 @@ npm run test:mobile       # recorrido completo en Chromium a 390 px con tres "te
 
 ## Decisiones tomadas (reversibles)
 
-- Vive en la carpeta `a-mano/` del repo `lab`. El proyecto Vercel `lab` la ignora (`.vercelignore`); se publica como proyecto aparte, `a-mano`.
+- Vive en la carpeta `a-mano/` del repo `lab`. El proyecto Vercel `lab` redirige `/a-mano/*` a su inicio (`vercel.json`); la app se publica como proyecto aparte, `a-mano`.
 - Rol de demo por cookie, elegido en `/demo`. No es autenticación real.
 - "Ya fui" se acepta en cualquier momento (en un piloto real, a partir de la fecha del turno).
 - Un paso en curso por vez. Cambiar de meta cancela el actual sin tocar el saldo.
