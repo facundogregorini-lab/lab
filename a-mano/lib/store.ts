@@ -18,7 +18,18 @@ const g = globalThis as unknown as { __amanoSnap?: Snapshot | null };
 async function load(): Promise<Snapshot> {
   const cached = g.__amanoSnap;
   const r = await get(PATH, { access: 'private', useCache: false, ifNoneMatch: cached?.etag ?? undefined });
-  if (!r) return { etag: null, db: openDb(':memory:') }; // primera vez: escenario inicial sembrado en memoria
+  if (!r) {
+    // Primera vez: siembra el escenario inicial y lo guarda, para que el token del QR quede fijo desde el principio.
+    const db = openDb(':memory:');
+    try {
+      const saved = await put(PATH, db.serialize(), { access: 'private', addRandomSuffix: false, allowOverwrite: false, contentType: 'application/vnd.sqlite3' });
+      g.__amanoSnap = { etag: saved.etag, db };
+      return g.__amanoSnap;
+    } catch {
+      g.__amanoSnap = null;
+      return load(); // otra instancia la creó primero: leer esa
+    }
+  }
   if (r.statusCode === 304 && cached) return cached;
   if (r.statusCode !== 200) throw new Error('No se pudo leer la base de la demo');
   const buf = Buffer.from(await new Response(r.stream).arrayBuffer());
