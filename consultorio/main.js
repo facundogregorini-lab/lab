@@ -133,6 +133,31 @@
     hide.addEventListener('click', function () { set(true); show.focus(); });
   });
 
+  // Casos: el antes y el después se comparan con un deslizador
+  $$('#cases .ba').forEach(function (ba) {
+    var img = $('img', ba), m = img && /casos\/(caso-\d+)\.webp$/.exec(img.getAttribute('src'));
+    if (!m) return;
+    var base = 'assets/casos/slider/' + m[1], fig = ba.closest('figure'), cap = fig && $('figcaption', fig);
+    var a = document.createElement('img'), d = document.createElement('img'), w = document.createElement('div');
+    a.src = base + '-antes.webp'; d.src = base + '-despues.webp';
+    a.alt = 'Antes'; d.alt = 'Después';
+    a.loading = d.loading = 'lazy'; a.decoding = d.decoding = 'async';
+    w.className = 'ba__after'; w.appendChild(d);
+    var bar = document.createElement('span'); bar.className = 'ba__bar'; bar.setAttribute('aria-hidden', 'true');
+    var r = document.createElement('input');
+    r.type = 'range'; r.min = 0; r.max = 100; r.value = 50; r.step = 'any';
+    r.setAttribute('aria-label', 'Comparar antes y después' + (cap ? ': ' + cap.textContent : ''));
+    function set(v) { ba.style.setProperty('--p', v + '%'); }
+    r.addEventListener('input', function () { set(r.value); });
+    ba.insertBefore(a, img);
+    ba.removeChild(img);
+    ba.insertBefore(w, a.nextSibling);
+    ba.insertBefore(bar, w.nextSibling);
+    ba.appendChild(r);
+    ba.classList.add('ba--slider');
+    set(50);
+  });
+
   // Filtros de casos
   var fbtn = $$('.filters button'), figs = $$('#cases > figure');
   fbtn.forEach(function (b) {
