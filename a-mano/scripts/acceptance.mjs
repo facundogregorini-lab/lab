@@ -8,13 +8,15 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.ACCEPTANCE_PORT || 3123);
-const BASE = `http://127.0.0.1:${PORT}`;
+const REMOTE = process.env.REMOTE_BASE; // p. ej. https://a-mano-grego7.vercel.app (no levanta servidor; resetea la demo al empezar y al terminar)
+const BASE = REMOTE || `http://127.0.0.1:${PORT}`;
 const dbFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'amano-')), 'acceptance.db');
 let server;
 let failures = 0;
 const results = [];
 
 function start() {
+  if (REMOTE) return waitUp();
   server = spawn(process.execPath, [path.join(root, 'node_modules/next/dist/bin/next'), 'start', '-p', String(PORT), '-H', '127.0.0.1'], {
     cwd: root, env: { ...process.env, AMANO_DB_PATH: dbFile }, stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -29,6 +31,7 @@ async function waitUp() {
   throw new Error('El servidor no arrancó');
 }
 function stop() {
+  if (REMOTE) return Promise.resolve();
   return new Promise((resolve) => { server.once('exit', resolve); server.kill('SIGTERM'); });
 }
 
@@ -66,6 +69,7 @@ async function expectSaldo(cookie, step, expected) {
 
 try {
   await start();
+  if (REMOTE) await control('reset');
   const dani = await login('persona:p_dani');
   const marta = await login('referente:r_marta');
   const julian = await login('referente:r_julian');
@@ -151,6 +155,7 @@ try {
   failures++;
   console.error('✗ Error inesperado:', e);
 } finally {
+  if (REMOTE) await control('reset').catch(() => {});
   if (server && server.exitCode === null) await stop();
   fs.rmSync(path.dirname(dbFile), { recursive: true, force: true });
 }
