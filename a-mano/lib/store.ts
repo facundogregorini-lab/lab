@@ -15,7 +15,7 @@ export const usesBlob = () => !!process.env.BLOB_READ_WRITE_TOKEN;
 type Snapshot = { etag: string | null; db: DB };
 const g = globalThis as unknown as { __amanoSnap?: Snapshot | null };
 
-async function load(): Promise<Snapshot> {
+async function load(retry = true): Promise<Snapshot> {
   const cached = g.__amanoSnap;
   const r = await get(PATH, { access: 'private', useCache: false, ifNoneMatch: cached?.etag ?? undefined });
   if (!r) {
@@ -25,9 +25,10 @@ async function load(): Promise<Snapshot> {
       const saved = await put(PATH, db.serialize(), { access: 'private', addRandomSuffix: false, allowOverwrite: false, contentType: 'application/vnd.sqlite3' });
       g.__amanoSnap = { etag: saved.etag, db };
       return g.__amanoSnap;
-    } catch {
+    } catch (e) {
       g.__amanoSnap = null;
-      return load(); // otra instancia la creó primero: leer esa
+      if (!retry) throw e;
+      return load(false); // otra instancia la creó primero: leer esa
     }
   }
   if (r.statusCode === 304 && cached) return cached;
