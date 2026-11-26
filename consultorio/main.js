@@ -148,7 +148,35 @@
     r.type = 'range'; r.min = 0; r.max = 100; r.value = 50; r.step = 'any';
     r.setAttribute('aria-label', 'Comparar antes y después' + (cap ? ': ' + cap.textContent : ''));
     function set(v) { ba.style.setProperty('--p', v + '%'); }
-    r.addEventListener('input', function () { set(r.value); });
+    var touched = false, raf = 0;
+    function stop() { touched = true; cancelAnimationFrame(raf); }
+    r.addEventListener('pointerdown', stop);
+    r.addEventListener('keydown', stop);
+    r.addEventListener('input', function () { stop(); set(r.value); });
+    // Al aparecer en pantalla, la línea se mueve sola a un lado y al otro para mostrar que se puede deslizar
+    ba.hint = function () {
+      if (touched || reduce) return;
+      var pts = [50, 32, 68, 50], seg = 650, t0 = null;
+      function ease(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+      function step(now) {
+        if (touched) return;
+        if (t0 === null) t0 = now;
+        var e = (now - t0) / seg, i = Math.floor(e);
+        if (i >= pts.length - 1) { set(50); r.value = 50; return; }
+        set(pts[i] + (pts[i + 1] - pts[i]) * ease(e - i));
+        raf = requestAnimationFrame(step);
+      }
+      raf = requestAnimationFrame(step);
+    };
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (es) {
+        if (!es[0].isIntersecting) return;
+        io.disconnect();
+        var go = function () { setTimeout(ba.hint, 300); };
+        if (a.complete) go(); else a.addEventListener('load', go, { once: true });
+      }, { threshold: 0.6 });
+      io.observe(ba);
+    }
     ba.insertBefore(a, img);
     ba.removeChild(img);
     ba.insertBefore(w, a.nextSibling);
